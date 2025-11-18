@@ -1,0 +1,55 @@
+# docker-compose.yml (final check)
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: reqflow-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: reqflow_admin_pass
+      MONGO_INITDB_DATABASE: reqflow
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - reqflow-network
+
+  backend:
+    build: ./backend
+    container_name: reqflow-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - mongodb
+    networks:
+      - reqflow-network
+
+  frontend:
+    build: ./frontend
+    container_name: reqflow-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    env_file:
+      - ./frontend/.env
+    depends_on:
+      - backend
+    networks:
+      - reqflow-network
+      - external_net
+
+networks:
+  reqflow-network:
+    driver: bridge
+  external_net:
+    driver: bridge  # 👈 ADD THIS
+
+
+volumes:
+  mongo_data:

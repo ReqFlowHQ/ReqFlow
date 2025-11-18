@@ -1,0 +1,13 @@
+# FILE: .gitignore
+node_modules
+dist
+.env
+.env.local
+.env.production
+.DS_Store
+*.log
+*.tgz
+coverage/
+.vscode/
+docker_data/
+mongo_data/
