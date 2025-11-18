@@ -166,7 +166,7 @@ npm run dev
 -AuthContext manages session state
 -This removes the need for password-based login and keeps things secure.
 
-# 📄 API Documentation
+### 📄 API Documentation
 -Swagger JSON is generated at:
 
 ```bash
