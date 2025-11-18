@@ -135,8 +135,8 @@ Everything can be started with one command:
 
 ```bash
 docker-compose up --build
+```
 Frontend → http://localhost:5173
-
 Backend → http://localhost:5000
 
 Both services communicate inside the Docker network automatically.
@@ -144,21 +144,20 @@ Both services communicate inside the Docker network automatically.
 🧪 Local Development (Without Docker)
 Install deps:
 
-bash
-Copy code
+```bash
 cd frontend && npm install
 cd backend && npm install
+```
 Run frontend:
 
-bash
-Copy code
+```bash
 npm run dev
+```
 Run backend:
 
-bash
-Copy code
+```bash
 npm run dev
-
+```
 🔐 OAuth2 Flow
 User chooses OAuth provider (Google, etc.)
 
@@ -175,16 +174,14 @@ This removes the need for password-based login and keeps things secure.
 📄 API Documentation
 Swagger JSON is generated at:
 
-bash
-Copy code
+```bash
 backend/src/swagger.json
-
+```
 Swagger UI available at:
 
-bash
-Copy code
+```bash
 /api/docs
-
+```
 🤝 Contributing
 Contributions are welcome!
 If you find something to improve, feel free to open an issue or submit a PR.
