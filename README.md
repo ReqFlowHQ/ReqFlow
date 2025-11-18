@@ -64,32 +64,33 @@ Everything runs in containers:
 
 # 🧱 Project Structure
 
+```text
 backend/
 ├─ src/
-│ ├─ config/
-│ ├─ controllers/
-│ ├─ middleware/
-│ ├─ models/
-│ ├─ routes/
-│ ├─ types/
-│ ├─ utils/
-│ ├─ db.ts
-│ ├─ index.ts
-│ ├─ passport.ts
-│ └─ swagger.json
+│  ├─ config/
+│  ├─ controllers/
+│  ├─ middleware/
+│  ├─ models/
+│  ├─ routes/
+│  ├─ types/
+│  ├─ utils/
+│  ├─ db.ts
+│  ├─ index.ts
+│  ├─ passport.ts
+│  └─ swagger.json
 ├─ Dockerfile
 ├─ package.json
 └─ tsconfig.json
 
 frontend/
 ├─ src/
-│ ├─ api/
-│ ├─ components/
-│ ├─ context/
-│ ├─ hooks/
-│ ├─ pages/
-│ ├─ App.tsx
-│ └─ main.tsx
+│  ├─ api/
+│  ├─ components/
+│  ├─ context/
+│  ├─ hooks/
+│  ├─ pages/
+│  ├─ App.tsx
+│  └─ main.tsx
 ├─ Dockerfile
 ├─ index.html
 └─ tailwind.config.js
@@ -98,6 +99,7 @@ frontend/
 docker-compose.yml
 LICENSE
 RELEASENOTES.md
+```
 
 ---
 
