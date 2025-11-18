@@ -129,7 +129,7 @@ RELEASENOTES.md
 
 ---
 
-# 🐳 Running with Docker
+## 🐳 Running with Docker
 
 Everything can be started with one command:
 
@@ -141,38 +141,38 @@ Backend → http://localhost:5000
 
 Both services communicate inside the Docker network automatically.
 
-# 🧪 Local Development (Without Docker)
+## 🧪 Local Development (Without Docker)
 Install deps:
 
 ```bash
 cd frontend && npm install
 cd backend && npm install
 ```
--Run frontend:
+- Run frontend:
 
 ```bash
 npm run dev
 ```
--Run backend:
+- Run backend:
 
 ```bash
 npm run dev
 ```
 # 🔐 OAuth2 Flow
--User chooses OAuth provider (Google, etc.)
--Provider redirects to backend callback
--Backend verifies identity and generates tokens
--Frontend receives JWT → stores in session
--AuthContext manages session state
--This removes the need for password-based login and keeps things secure.
+- User chooses OAuth provider (Google, etc.)
+- Provider redirects to backend callback
+- Backend verifies identity and generates tokens
+- Frontend receives JWT → stores in session
+- AuthContext manages session state
+- This removes the need for password-based login and keeps things secure.
 
-### 📄 API Documentation
+# 📄 API Documentation
 -Swagger JSON is generated at:
 
 ```bash
 backend/src/swagger.json
 ```
--Swagger UI available at:
+- Swagger UI available at:
 
 ```bash
 /api/docs
