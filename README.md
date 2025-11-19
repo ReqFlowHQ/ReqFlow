@@ -21,9 +21,14 @@
 # ReqFlow — Modern, Container-Ready API Testing Workspace
 
 ReqFlow is a product of OpenGraph Labs, where we build tools that simplify a developer’s day-to-day workflow.
+
 ReqFlow is designed as a modern alternative to cluttered API clients—clean UI, structured request management, secure backend architecture, and effortless deployment with Docker and Nginx.
+
 Our team focuses on crafting developer experiences that feel intuitive, fast, and scalable.
+
 The goal is simple: make daily API testing fast, organized, and actually pleasant to use.
+
+**OpenGraph Labs — Tools for developers, built by developers**
 
 ---
 
