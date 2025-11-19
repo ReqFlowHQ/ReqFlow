@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/favicon/ms-icon-70x70.png" alt="ReqFlow Banner" />
+  <img src="frontend/favicon/labs.png" alt="ReqFlow Banner" />
 </p>
 
 <br/>
