@@ -136,8 +136,8 @@ Everything can be started with one command:
 ```bash
 docker-compose up --build
 ```
-Frontend → http://localhost:5173
-Backend → http://localhost:5000
+- Frontend → http://localhost:5173
+- Backend → http://localhost:5000
 
 Both services communicate inside the Docker network automatically.
 
