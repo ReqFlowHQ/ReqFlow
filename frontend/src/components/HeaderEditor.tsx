@@ -1,76 +1,97 @@
 // FILE: frontend/src/components/HeaderEditor.tsx
 import React, { useState, useEffect } from "react";
 
+interface HeaderRow {
+  id: string;
+  key: string;
+  value: string;
+}
+
 interface HeaderEditorProps {
   headers: Record<string, string>;
   requestId: string;
   updateRequest: (id: string, updates: Partial<any>) => void;
 }
 
-export default function HeaderEditor({ headers, requestId, updateRequest }: HeaderEditorProps) {
-  const [localHeaders, setLocalHeaders] = useState<Record<string, string>>(headers || {});
+export default function HeaderEditor({
+  headers,
+  requestId,
+  updateRequest,
+}: HeaderEditorProps) {
+  const [rows, setRows] = useState<HeaderRow[]>([]);
 
   useEffect(() => {
-    setLocalHeaders(headers || {});
+    const initialRows = Object.entries(headers || {}).map(
+      ([key, value], i) => ({
+        id: `${key}-${i}`,
+        key,
+        value,
+      })
+    );
+    setRows(initialRows);
   }, [headers]);
 
-  const handleChange = (key: string, value: string) => {
-    const updated = { ...localHeaders, [key]: value };
-    setLocalHeaders(updated);
-    updateRequest(requestId, { headers: updated });
+  const syncToRequest = (updatedRows: HeaderRow[]) => {
+    const obj: Record<string, string> = {};
+    updatedRows.forEach(({ key, value }) => {
+      if (key.trim()) obj[key] = value;
+    });
+    updateRequest(requestId, { headers: obj });
   };
 
-  const handleAddHeader = () => {
-    let newKey = "New-Header";
-    let counter = 1;
-    while (newKey in localHeaders) newKey = `New-Header-${counter++}`;
-    const updated = { ...localHeaders, [newKey]: "" };
-    setLocalHeaders(updated);
-    updateRequest(requestId, { headers: updated });
+  const updateRow = (id: string, field: "key" | "value", value: string) => {
+    const updated = rows.map((r) =>
+      r.id === id ? { ...r, [field]: value } : r
+    );
+    setRows(updated);
+    syncToRequest(updated);
   };
 
-  const handleRemoveHeader = (key: string) => {
-    const updated = { ...localHeaders };
-    delete updated[key];
-    setLocalHeaders(updated);
-    updateRequest(requestId, { headers: updated });
+  const addHeader = () => {
+    const updated = [
+      ...rows,
+      { id: crypto.randomUUID(), key: "", value: "" },
+    ];
+    setRows(updated);
+  };
+
+  const removeHeader = (id: string) => {
+    const updated = rows.filter((r) => r.id !== id);
+    setRows(updated);
+    syncToRequest(updated);
   };
 
   return (
     <div className="mt-3 p-4 bg-white/20 dark:bg-gray-900/30 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
-      {Object.entries(localHeaders).map(([key, value]) => (
-        <div key={key} className="flex items-center gap-2 mb-2">
+      {rows.map((row) => (
+        <div key={row.id} className="flex items-center gap-2 mb-2">
           <input
-            value={key}
-            onChange={(e) => {
-              const newKey = e.target.value;
-              const updated = { ...localHeaders };
-              delete updated[key];
-              updated[newKey] = value;
-              setLocalHeaders(updated);
-              updateRequest(requestId, { headers: updated });
-            }}
-            className="w-1/3 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            value={row.key}
+            onChange={(e) => updateRow(row.id, "key", e.target.value)}
+            placeholder="Header name"
+            className="w-1/3 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           <input
-            value={value}
-            onChange={(e) => handleChange(key, e.target.value)}
-            className="flex-1 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            value={row.value}
+            onChange={(e) => updateRow(row.id, "value", e.target.value)}
+            placeholder="Header value"
+            className="flex-1 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           <button
-            onClick={() => handleRemoveHeader(key)}
-            className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+            onClick={() => removeHeader(row.id)}
+            className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600"
           >
             ✕
           </button>
         </div>
       ))}
       <button
-        onClick={handleAddHeader}
-        className="mt-2 px-3 py-1 text-sm text-blue-600 rounded-md hover:bg-white/10 dark:hover:bg-gray-700 transition"
+        onClick={addHeader}
+        className="mt-2 px-3 py-1 text-sm text-blue-600 rounded-md hover:bg-white/10 dark:hover:bg-gray-700"
       >
         + Add Header
       </button>
     </div>
   );
 }
+

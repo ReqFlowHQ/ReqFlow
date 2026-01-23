@@ -18,22 +18,18 @@ export default function Dashboard() {
   });
   const [isDragging, setIsDragging] = useState(false);
 
-  const { token } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const splitRef = useRef<HTMLDivElement>(null);
 
-  // Redirect to login if no token
-  useEffect(() => {
-    if (!token && !(sessionStorage.getItem("accessToken") || localStorage.getItem("accessToken"))) {
-      navigate("/login", { replace: true });
-    }
-  }, []);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("accessToken");
-    if (token) fetchCollections();
-  }, [fetchCollections]);
+  if (user) {
+    fetchCollections();
+  }
+}, [user, fetchCollections]);
 
+  
   // Drag logic
   const startDrag = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -72,13 +68,14 @@ export default function Dashboard() {
     };
   }, [isDragging]);
 
-  if (!token && !localStorage.getItem("accessToken")) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-white text-lg">
         Loading...
       </div>
     );
   }
+
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-900/70 backdrop-blur-md text-gray-100">
@@ -91,9 +88,8 @@ export default function Dashboard() {
       <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar */}
         <div
-          className={`transition-all duration-300 md:translate-x-0 ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-          } z-30`}
+          className={`transition-all duration-300 md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+            } z-30`}
         >
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         </div>
@@ -126,9 +122,8 @@ export default function Dashboard() {
             {/* Divider */}
             <div
               onMouseDown={startDrag}
-              className={`hidden md:block w-2 cursor-col-resize transition-all duration-150 rounded-full bg-white/10 hover:bg-white/20 hover:shadow-lg ${
-                isDragging ? "bg-white/30 shadow-xl" : ""
-              }`}
+              className={`hidden md:block w-2 cursor-col-resize transition-all duration-150 rounded-full bg-white/10 hover:bg-white/20 hover:shadow-lg ${isDragging ? "bg-white/30 shadow-xl" : ""
+                }`}
               style={{ backdropFilter: "blur(6px)" }}
             />
 

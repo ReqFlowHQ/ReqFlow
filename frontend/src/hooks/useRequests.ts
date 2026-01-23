@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { api } from "../api/axios";
+import api from "../api/axios";
 import axios, { type AxiosResponse } from "axios";
 
 // Add this type declaration for ImportMeta.env
@@ -55,6 +55,8 @@ interface ReqFlowState {
   updateRequest: (id: string, updates: Partial<RequestItem>) => void;
   saveRequest: (id: string) => Promise<void>;
   deleteRequest: (id: string) => Promise<void>;
+  createTemporaryRequest: () => void;
+
 }
 
 /* ---------------- Store ---------------- */
@@ -74,6 +76,7 @@ export const useRequests = create<ReqFlowState>()(
       setActiveCollection: (id) => set({ activeCollection: id }),
 
       /* -------- Collections -------- */
+      
       fetchCollections: async () => {
         try {
           const token =
@@ -85,7 +88,13 @@ export const useRequests = create<ReqFlowState>()(
           set({ collections: res.data });
         } catch (err) {
           console.error("Fetch collections failed", err);
+
+          const isGuest = sessionStorage.getItem("guest") === "true";
+          if (isGuest && !get().activeRequest) {
+            get().createTemporaryRequest();
+          }
         }
+
       },
 
       /* -------- Requests -------- */
@@ -172,7 +181,26 @@ export const useRequests = create<ReqFlowState>()(
           set({ activeTabIds: updatedTabs });
         }
       },
+      
+      createTemporaryRequest: () => {
+        const temp: RequestItem = {
+          _id: "guest-temp",
+          name: "Guest Request",
+          method: "GET",
+          url: "",
+          headers: {},
+          body: {},
+          isTemporary: true,
+          collection: null,
+          response: null,
+        };
 
+        set({
+          activeRequest: temp,
+          activeTabIds: ["guest-temp"],
+          response: null,
+        });
+      },
       createRequest: (collectionId) => {
         const newRequest: RequestItem = {
           _id: crypto.randomUUID(),
@@ -317,8 +345,6 @@ export const useRequests = create<ReqFlowState>()(
           setLoading(false);
         }
       },
-
-
 
       /* -------- Save / Delete -------- */
       saveRequest: async (id) => {

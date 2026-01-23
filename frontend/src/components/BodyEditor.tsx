@@ -2,29 +2,34 @@
 import React, { useState, useEffect } from "react";
 
 interface BodyEditorProps {
-  body: Record<string, any> | string;
+  body: string | Record<string, any>;
   requestId: string;
   updateRequest: (id: string, updates: Partial<any>) => void;
 }
 
-export default function BodyEditor({ body, requestId, updateRequest }: BodyEditorProps) {
-  const [localBody, setLocalBody] = useState<string>(
-    typeof body === "string" ? body : JSON.stringify(body || {}, null, 2)
-  );
+export default function BodyEditor({
+  body,
+  requestId,
+  updateRequest,
+}: BodyEditorProps) {
+  const [localBody, setLocalBody] = useState("");
 
   useEffect(() => {
-    setLocalBody(typeof body === "string" ? body : JSON.stringify(body || {}, null, 2));
+    if (typeof body === "string") {
+      setLocalBody(body);
+    } else if (body && Object.keys(body).length > 0) {
+      setLocalBody(JSON.stringify(body, null, 2));
+    } else {
+      setLocalBody("");
+    }
   }, [body]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setLocalBody(text);
-    try {
-      const parsed = JSON.parse(text || "{}");
-      updateRequest(requestId, { body: parsed });
-    } catch {
-      // wait for valid JSON
-    }
+
+    // 🔑 Store RAW STRING — no parsing here
+    updateRequest(requestId, { body: text });
   };
 
   return (
@@ -32,8 +37,10 @@ export default function BodyEditor({ body, requestId, updateRequest }: BodyEdito
       <textarea
         value={localBody}
         onChange={handleChange}
+        placeholder="Enter raw body (JSON, form data, text, etc.)"
         className="w-full h-48 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
       />
     </div>
   );
 }
+

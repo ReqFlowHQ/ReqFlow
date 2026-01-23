@@ -3,6 +3,9 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as GitHubStrategy } from "passport-github2";
 import User from "./models/User";
+import "dotenv/config";
+
+console.log("GOOGLE_CLIENT_ID =", process.env.GOOGLE_CLIENT_ID);
 
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";

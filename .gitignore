@@ -1,13 +1,36 @@
-# FILE: .gitignore
-node_modules
-dist
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+build/
+
+# env files
 .env
 .env.local
-.env.production
+.env.*.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS files
 .DS_Store
-*.log
-*.tgz
-coverage/
+Thumbs.db
+
+# IDE
 .vscode/
-docker_data/
-mongo_data/
+.idea/
+
+# PM2
+.pids
+*.pid
+
+# cloudflared
+*.json
+.cloudflared/
+
+# misc
+coverage/
+

@@ -1,10 +1,26 @@
+// FILE: frontend/src/components/PrivateRoute.tsx
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function PrivateRoute({ element }: { element: JSX.Element }) {
-  const { token, loading } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (loading) return <p className="text-center text-gray-300 mt-10">Loading...</p>;
+  const isGuest = sessionStorage.getItem("guest") === "true";
 
-  return token ? element : <Navigate to="/login" replace />;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-gray-400">
+        Loading...
+      </div>
+    );
+  }
+
+  // ✅ Logged-in OR guest
+  if (user || isGuest) {
+    return element;
+  }
+
+  // ❌ Truly unauthenticated
+  return <Navigate to="/login" replace />;
 }
+

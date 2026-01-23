@@ -3,6 +3,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* tailwind.css */
+html {
+  font-size: 16.5px;
+}
+
 body {
   @apply bg-gray-900 text-gray-100;
 }

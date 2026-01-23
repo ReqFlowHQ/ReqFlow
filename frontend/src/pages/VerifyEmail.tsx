@@ -14,7 +14,10 @@ export default function VerifyEmail() {
     }
 
     // Simulate verification API call
-    fetch(`${import.meta.env.VITE_API_URL}/auth/verify-email?token=${token}`)
+    fetch(`/api/auth/verify-email?token=${token}`, {
+      credentials: "include",
+    })
+
       .then((res) => {
         if (res.ok) setStatus("success");
         else throw new Error("Invalid token");

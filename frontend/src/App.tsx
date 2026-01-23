@@ -1,8 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
-import OAuthSuccess from "./pages/OAuthSuccess";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -27,9 +25,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             <Route path="/verify/:token" element={<VerifyEmail />} />
-            <Route path="/oauth/success" element={<OAuthSuccess />} />
             <Route
               path="/dashboard"
               element={<PrivateRoute element={<Dashboard />} />}

@@ -3,11 +3,11 @@ import { motion } from "framer-motion";
 
 export default function Login() {
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    window.location.href = "/api/auth/google";
   };
 
   const handleGitHubLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/github";
+    window.location.href = "/api/auth/github";
   };
 
   return (
@@ -30,16 +30,16 @@ export default function Login() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 1 }}
         >
-          ReqFlow is a sleek and modern alternative to Postman. Designed for developers and teams, it allows you to send, test, and manage HTTP requests effortlessly. Minimal interface, smart request management, and built-in collaboration features make your workflow smoother.
+          ReqFlow is a sleek and modern alternative to Postman. Designed for developers
+          and teams to send, test, and manage HTTP requests effortlessly.
         </motion.p>
 
         <motion.ul
-          className="text-white/70 text-sm md:text-base list-disc list-inside space-y-1 md:space-y-2"
+          className="text-white/70 text-sm md:text-base list-disc list-inside space-y-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 1 }}
         >
-          <li>Organize requests with collections & tabs</li>
           <li>Send GET, POST, PUT, PATCH, DELETE requests</li>
           <li>Instantly view formatted JSON responses</li>
           <li>Supports OAuth, API keys, custom headers</li>
@@ -48,22 +48,30 @@ export default function Login() {
 
       {/* Right: Login Box */}
       <motion.div
-        className="flex-1 max-w-md w-full p-10 rounded-2xl bg-white/10 dark:bg-gray-900/40 border border-white/20 shadow-2xl backdrop-blur-2xl relative"
+        className="flex-1 max-w-md w-full p-10 rounded-2xl bg-white/10
+                   dark:bg-gray-900/40 border border-white/20 shadow-2xl
+                   backdrop-blur-2xl relative"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.5, duration: 1 }}
+        transition={{ delay: 1.2, duration: 0.8 }}
       >
-        <h2 className="text-3xl font-bold text-white mb-6 drop-shadow-md text-center md:text-left">
+        <h2 className="text-3xl font-bold text-white mb-6 text-center md:text-left">
           Sign in
         </h2>
+
         <p className="text-white/70 mb-6 text-center md:text-left">
           Choose your preferred login method
         </p>
 
+        {/* AUTH ACTIONS */}
         <div className="flex flex-col gap-4">
+          {/* Google */}
           <button
             onClick={handleGoogleLogin}
-            className="flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md hover:scale-105 hover:shadow-lg transition-transform"
+            className="flex items-center justify-center gap-3
+                       bg-white text-gray-800 font-semibold
+                       py-2 px-4 rounded-lg shadow-md
+                       hover:scale-105 hover:shadow-lg transition-transform"
           >
             <img
               src="https://www.svgrepo.com/show/475656/google-color.svg"
@@ -73,9 +81,13 @@ export default function Login() {
             Continue with Google
           </button>
 
+          {/* GitHub */}
           <button
             onClick={handleGitHubLogin}
-            className="flex items-center justify-center gap-3 bg-gray-900 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:scale-105 hover:shadow-lg transition-transform"
+            className="flex items-center justify-center gap-3
+                       bg-gray-900 text-white font-semibold
+                       py-2 px-4 rounded-lg shadow-md
+                       hover:scale-105 hover:shadow-lg transition-transform"
           >
             <img
               src="https://www.svgrepo.com/show/512317/github-142.svg"
@@ -83,6 +95,29 @@ export default function Login() {
               className="w-5 h-5 invert"
             />
             Continue with GitHub
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-2">
+            <div className="flex-1 h-px bg-white/20" />
+            <span className="text-xs text-white/60">or</span>
+            <div className="flex-1 h-px bg-white/20" />
+          </div>
+
+          {/* Guest */}
+          <button
+            onClick={() => {
+              sessionStorage.setItem("guest", "true");
+              window.location.href = "/dashboard";
+            }}
+            className="flex items-center justify-center gap-2
+                       py-2 px-4 rounded-lg
+                       border border-white/30
+                       text-white/90 text-sm
+                       hover:bg-white/20 hover:text-white transition"
+          >
+            Continue as Guest
+            <span className="text-xs opacity-60">(5 GET/day)</span>
           </button>
         </div>
 
@@ -92,7 +127,9 @@ export default function Login() {
           <a href="#" className="underline hover:text-white">Privacy Policy</a>.
         </p>
 
-        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 opacity-10 blur-2xl pointer-events-none"></div>
+        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r
+                        from-indigo-400 via-purple-400 to-pink-400
+                        opacity-10 blur-2xl pointer-events-none" />
       </motion.div>
     </div>
   );

@@ -1,19 +1,20 @@
 // FILE: frontend/src/context/AuthContext.tsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api/axios";
 
 interface AuthContextType {
   user: any;
-  token: string | null;
   loading: boolean;
-  login: (token: string, userData?: any) => void;
+  isGuest: boolean;
+  login: () => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  token: null,
   loading: true,
+  isGuest: false,
   login: () => {},
   logout: () => {},
 });
@@ -21,43 +22,44 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
+  // 🔥 Auth hydration (cookie-based)
   useEffect(() => {
-  const storedToken = sessionStorage.getItem("accessToken");
-  const storedUser = sessionStorage.getItem("user");
+    api
+      .get("/auth/me", { withCredentials: true })
+      .then((res) => {
+        setUser(res.data.user);
+        sessionStorage.removeItem("guest"); // real login overrides guest
+        sessionStorage.removeItem("guest-get-count");
+      })
+      .catch(() => {
+        // Not logged in → stay null
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-  if (storedToken) {
-    setToken(storedToken);
-  }
-  if (storedUser) {
-    setUser(JSON.parse(storedUser));
-  }
-
-  setLoading(false);
-}, []);
-
-
-
-  const login = (newToken: string, userData?: any) => {
-    setToken(newToken);
-    setUser(userData);
-    sessionStorage.setItem("accessToken", newToken);
-    if (userData) sessionStorage.setItem("user", JSON.stringify(userData));
+  const login = () => {
+    navigate("/dashboard");
   };
 
-  const logout = () => {
-  setToken(null);
-  setUser(null);
-  sessionStorage.removeItem("accessToken");
-  sessionStorage.removeItem("user");
-  navigate("/login");
-};
+  const logout = async () => {
+    await api.post("/auth/logout").catch(() => {});
+    setUser(null);
+    sessionStorage.removeItem("guest");
+    sessionStorage.removeItem("guest-get-count");
+    sessionStorage.removeItem("reqflow-session");
+    navigate("/login");
+  };
 
+  const isGuest =
+    !loading &&
+    !user &&
+    sessionStorage.getItem("guest") === "true";
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, isGuest, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
