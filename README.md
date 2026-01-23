@@ -81,6 +81,7 @@ Frontend (React + Vite) communicates with a Node.js + Express backend.
 Authentication is handled via OAuth 2.0 and JWT.
 Guest users are rate-limited using IP + User-Agent fingerprinting.
 MongoDB is used for persistence.
+
 ---
 
 # Project Structure
