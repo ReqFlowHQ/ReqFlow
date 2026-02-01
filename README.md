@@ -1,6 +1,3 @@
-![Version](https://img.shields.io/badge/version-v1.0.1-blue)
-![Status](https://img.shields.io/badge/status-stable-brightgreen)
-![Mobile](https://img.shields.io/badge/mobile-supported-purple)
 <p align="center">
   <img src="frontend/public/assets/reqflow-logo.png" alt="ReqFlow Banner" width="180" />
 </p>
@@ -20,6 +17,8 @@
 </p>
 
 ![Release](https://img.shields.io/github/v/release/ReqFlowHQ/ReqFlow)
+![Status](https://img.shields.io/badge/status-stable-brightgreen)
+![Mobile](https://img.shields.io/badge/mobile-supported-purple)
 ![License](https://img.shields.io/github/license/ReqFlowHQ/ReqFlow)
 ![Stars](https://img.shields.io/github/stars/ReqFlowHQ/ReqFlow?style=social)
 
