@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/public/assets/reqflow-logo.png" alt="ReqFlow Banner" />
+  <img src="frontend/public/assets/reqflow-logo.png" alt="ReqFlow Banner" width="180" />
 </p>
 
 <br/>
