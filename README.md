@@ -316,6 +316,9 @@ npm run dev
 ```bash
 npm run dev
 ```
+
+---
+
 # OAuth2 Flow
 
 - User chooses OAuth provider (Google, etc.)
@@ -324,6 +327,8 @@ npm run dev
 - Frontend receives JWT → stores in session
 - AuthContext manages session state
 - This removes the need for password-based login and keeps things secure.
+
+---
 
 # API Documentation
 
@@ -337,11 +342,18 @@ backend/src/swagger.json
 ```bash
 /api/docs
 ```
+
+---
+
 # Contributing
 
 Contributions are welcome!
 If you find something to improve, feel free to open an issue or submit a PR.
 
+---
+
 # License
 
 MIT License
+
+---
