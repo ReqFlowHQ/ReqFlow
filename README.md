@@ -22,6 +22,8 @@
 
 ---
 
+Released as v1.0.0 · Actively maintained
+
 # ReqFlow — API Testing & Request Workflow Platform
 
 ReqFlow is a modern, container-ready **API testing and request workflow platform** for developers.
