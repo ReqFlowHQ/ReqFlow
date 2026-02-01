@@ -38,6 +38,14 @@ This is the official **ReqFlow repository**, developed and maintained by the **R
 
 ---
 
+## Why ReqFlow?
+
+- Designed around workflows, not just raw requests  
+- Clean separation of frontend, backend, and infrastructure  
+- First-class authentication handling (OAuth + JWT)  
+- Container-ready from day one  
+- Open-source and developer-first
+
 # Key Features
 
 ### Upcoming Feature: Engineer Mode  
