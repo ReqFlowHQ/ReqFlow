@@ -146,6 +146,12 @@ export const deleteRequest = async (req: Request, res: Response) => {
 
 /* ----------------------------- Temporary Execution ----------------------------- */
 export const executeTemp = async (req: Request, res: Response) => {
+  const { url, method = "GET", headers = {}, body } = req.body;
+
+  if (!url) {
+    return res.status(400).json({ message: "URL is required" });
+  }
+
   try {
     const userId = (req as any).userId;
     console.log("EXEC TEMP userId =", (req as any).userId);

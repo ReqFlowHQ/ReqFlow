@@ -384,6 +384,13 @@ export const useRequests = create<ReqFlowState>()(
 
       /* -------- Execute -------- */
       executeRequest: async (id) => {
+      const { guestRemaining } = get();
+
+if (guestRemaining !== null && guestRemaining <= 0) {
+  throw new Error("Guest request limit exhausted");
+}
+
+
         const {
   activeRequest,
   updateRequest,
@@ -406,27 +413,36 @@ export const useRequests = create<ReqFlowState>()(
             console.log("🌐 Executing TEMP request...");
 	  
             const res = await api.post(
-              "/requests/proxy",
-              {
-                url: activeRequest.url,
-                method: activeRequest.method,
-                headers: activeRequest.headers,
-                body: activeRequest.body,
-              },
-              { withCredentials: true }
-            );
-	    const remaining = res.headers["x-guest-remaining"];
+  "/requests/proxy",
+  {
+    url: activeRequest.url,
+    method: activeRequest.method,
+    headers: activeRequest.headers,
+    body: activeRequest.body,
+  },
+  { withCredentials: true }
+);
+
+// ❌ treat HTTP error as failure
+if (res.status >= 400) {
+  throw {
+    response: res,
+  };
+}
+
+const remaining = res.headers["x-guest-remaining"];
 if (remaining !== undefined) {
   setGuestRemaining(Number(remaining));
 }
 
-            const enhancedResponse = {
-              data: res.data?.data ?? res.data,
-              status: res.status,
-              statusText: res.statusText,
-              headers: res.data?.headers ?? {}, 
-              time: Math.round(performance.now() - start),
-            };
+const enhancedResponse = {
+  data: res.data?.data ?? res.data,
+  status: res.status,
+  statusText: res.statusText,
+  headers: res.data?.headers ?? {},
+  time: Math.round(performance.now() - start),
+};
+
 
             updateRequest(activeRequest._id, { response: enhancedResponse });
             set({ response: enhancedResponse });
@@ -437,10 +453,23 @@ if (remaining !== undefined) {
             console.log("💾 Executing SAVED request...");
 
             const res = await api.post(
-              `/requests/${activeRequest._id}/execute`,
-              {},
-              { withCredentials: true }
-            );
+  `/requests/${activeRequest._id}/execute`,
+  {},
+  { withCredentials: true }
+);
+
+if (res.status >= 400) {
+  const remaining = res.headers["x-guest-remaining"];
+  if (remaining !== undefined) {
+    setGuestRemaining(Number(remaining));
+  }
+
+  throw {
+    response: res,
+  };
+}
+
+
 
             const enhancedResponse = {
               ...res.data,
@@ -458,33 +487,32 @@ if (remaining !== undefined) {
           }
 
         } catch (err: any) {
-          // 🔥 unified error handler
-          if (err.response) {
-          const remaining = err.response.headers?.["x-guest-remaining"];
-if (remaining !== undefined) {
-  setGuestRemaining(Number(remaining));
+  if (err.response) {
+    const remaining = err.response.headers?.["x-guest-remaining"];
+    if (remaining !== undefined) {
+      setGuestRemaining(Number(remaining));
+    }
+
+    const enhancedResponse = {
+      data: err.response.data,
+      status: err.response.status,
+      statusText: err.response.statusText,
+      headers: err.response.headers ?? {},
+      time: Math.round(performance.now() - start),
+    };
+
+    updateRequest(activeRequest._id, { response: enhancedResponse });
+    set({ response: enhancedResponse });
+
+    // 🔥 IMPORTANT
+    throw new Error(
+      err.response.data?.message || "Request failed"
+    );
+  }
+
+  throw new Error(err.message || "Request failed");
 }
-            const enhancedResponse = {
-              data: err.response.data?.data ?? err.response.data,
-              status: err.response.status,
-              statusText: err.response.statusText,
-              headers: err.response.data?.headers ?? {},
-              time: Math.round(performance.now() - start),
-            };
-
-            updateRequest(activeRequest._id, { response: enhancedResponse });
-            set({ response: enhancedResponse });
-
-          } else {
-            console.error("❌ Network / unknown error", err);
-            setResponse({
-              error:
-                err?.response?.data?.message ||
-                err?.message ||
-                "Request execution failed",
-            });
-          }
-        } finally {
+ finally {
           setLoading(false);
         }
       },

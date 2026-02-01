@@ -53,41 +53,52 @@ export const guestGuard = async (req: Request, res: Response, next: NextFunction
     let usage = await GuestUsage.findOne({ key });
 
     if (!usage || usage.date !== today) {
-      usage = await GuestUsage.findOneAndUpdate(
-        { key },
-        { count: 1, date: today },
-        { upsert: true, new: true }
-      )!; // ✅ non-null assertion (safe here)
+  usage = await GuestUsage.findOneAndUpdate(
+    { key },
+    { count: 1, date: today },
+    { upsert: true, new: true }
+  );
 
-      (req as any).guestMeta = {
-        limit: MAX_GUEST_GETS,
-        remaining: MAX_GUEST_GETS - 1,
-      };
+  const remaining = MAX_GUEST_GETS - 1;
 
-      return next();
-    }
+  res.setHeader("x-guest-remaining", String(remaining));
+
+  (req as any).guestMeta = {
+    limit: MAX_GUEST_GETS,
+    remaining,
+  };
+
+  return next();
+}
+
 
     // 🔥 NOW TypeScript KNOWS usage exists
     if (usage.count >= MAX_GUEST_GETS) {
-      (req as any).guestMeta = {
-        limit: MAX_GUEST_GETS,
-        remaining: 0,
-      };
+  (req as any).guestMeta = {
+    limit: MAX_GUEST_GETS,
+    remaining: 0,
+  };
+  res.setHeader("x-guest-remaining", "0");
+  return res.status(429).json({
+    message: "Guest request limit exhausted",
+  });
+}
 
-      return res.status(429).json({
-        message: "Guest limit reached (5 GET requests per day)",
-      });
-    }
+/* 🔥 COUNT ATTEMPT IMMEDIATELY */
+usage.count += 1;
+await usage.save();
 
-    usage.count += 1;
-    await usage.save();
+(req as any).guestMeta = {
+  limit: MAX_GUEST_GETS,
+  remaining: MAX_GUEST_GETS - usage.count,
+};
+res.setHeader(
+  "x-guest-remaining",
+  String(MAX_GUEST_GETS - usage.count)
+);
 
-    (req as any).guestMeta = {
-      limit: MAX_GUEST_GETS,
-      remaining: MAX_GUEST_GETS - usage.count,
-    };
+next();
 
-    next();
 
   } catch (err) {
     console.error("Guest guard error:", err);
