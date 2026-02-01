@@ -48,20 +48,6 @@ This is the official **ReqFlow repository**, developed and maintained by the **R
 
 # Key Features
 
-### Upcoming Feature: Engineer Mode  
-A dedicated workspace designed for power users.  
-Engineer Mode introduces an animated “wave” interaction that transforms the UI theme as it flows across the screen.  
-Along with the visual unlock, this mode will enable advanced capabilities such as:
-
-- AI-assisted request generation  
-- Intelligent workflow chaining  
-- Automated testing sequences  
-- Smart suggestions for headers, params, and auth flows  
-
-This feature is currently in development and will be introduced in an upcoming release.
-
----
-
 ### Authentication
 - OAuth 2.0 login support  
 - JWT access tokens + refresh tokens  
@@ -99,6 +85,18 @@ Frontend (React + Vite) communicates with a Node.js + Express backend.
 Authentication is handled via OAuth 2.0 and JWT.
 Guest users are rate-limited using IP + User-Agent fingerprinting.
 MongoDB is used for persistence.
+
+### Upcoming Feature: Engineer Mode  
+A dedicated workspace designed for power users.  
+Engineer Mode introduces an animated “wave” interaction that transforms the UI theme as it flows across the screen.  
+Along with the visual unlock, this mode will enable advanced capabilities such as:
+
+- AI-assisted request generation  
+- Intelligent workflow chaining  
+- Automated testing sequences  
+- Smart suggestions for headers, params, and auth flows  
+
+This feature is currently in development and will be introduced in an upcoming release.
 
 ---
 
