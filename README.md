@@ -1,3 +1,6 @@
+![Release](https://img.shields.io/github/v/release/ReqFlowHQ/ReqFlow)
+![License](https://img.shields.io/github/license/ReqFlowHQ/ReqFlow)
+![Stars](https://img.shields.io/github/stars/ReqFlowHQ/ReqFlow?style=social)
 <p align="center">
   <img src="frontend/favicon/labs.png" alt="ReqFlow Banner" />
 </p>
