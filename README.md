@@ -46,6 +46,8 @@ This is the official **ReqFlow repository**, developed and maintained by the **R
 - Container-ready from day one  
 - Open-source and developer-first
 
+---
+
 # Key Features
 
 ### Upcoming Feature: Engineer Mode  
@@ -59,6 +61,8 @@ Along with the visual unlock, this mode will enable advanced capabilities such a
 - Smart suggestions for headers, params, and auth flows  
 
 This feature is currently in development and will be introduced in an upcoming release.
+
+---
 
 ### Authentication
 - OAuth 2.0 login support  
