@@ -26,8 +26,11 @@ Released as v1.0.0 · Actively maintained
 
 # ReqFlow — API Testing & Request Workflow Platform
 
-ReqFlow is a modern, container-ready **API testing and request workflow platform** for developers.
-It is designed as a clean, scalable alternative to tools like Postman, focused on structured request management, authentication workflows, and Docker-based deployment.
+ReqFlow is a modern **API testing and request workflow platform** for developers
+who want clarity, speed, and control when working with APIs.
+
+It is a clean, container-ready alternative to tools like Postman, designed around
+structured request management, authentication workflows, and Docker-based deployment.
 
 This is the official **ReqFlow repository**, developed and maintained by the **ReqFlow** team.
 
