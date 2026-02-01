@@ -12,7 +12,10 @@ export const guestGuard = async (req: Request, res: Response, next: NextFunction
       return next();
     }
 
-    const actualMethod = req.body?.request?.method;
+    const actualMethod =
+      req.body?.method ||
+      req.body?.request?.method;
+
 
     if (!actualMethod) {
       return res.status(400).json({

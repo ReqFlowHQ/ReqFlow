@@ -1,6 +1,5 @@
 // FILE: frontend/src/pages/Dashboard.tsx
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import Topbar from "../components/Topbar";
 import Sidebar from "../components/Sidebar";
 import RequestTabs from "../components/RequestTabs";
@@ -8,9 +7,20 @@ import RequestEditor from "../components/RequestEditor";
 import JsonViewer from "../components/JsonViewer";
 import { useAuth } from "../context/AuthContext";
 import { useRequests } from "../hooks/useRequests";
+import { Helmet } from "react-helmet-async";
+import { ThemeProvider } from "../context/ThemeContext";
 
 export default function Dashboard() {
-  const { fetchCollections } = useRequests();
+  /* -------------------- STORES -------------------- */
+  const { user, loading, isGuest } = useAuth();
+  const {
+    fetchCollections,
+    setGuestInitialized,
+    guestInitialized,
+  } = useRequests();
+
+
+  /* -------------------- UI STATE -------------------- */
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [splitWidth, setSplitWidth] = useState<number>(() => {
     const saved = localStorage.getItem("reqflow-split");
@@ -18,20 +28,46 @@ export default function Dashboard() {
   });
   const [isDragging, setIsDragging] = useState(false);
 
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
   const splitRef = useRef<HTMLDivElement>(null);
+  const isMobile = window.innerWidth < 768;
 
+  /* -------------------- SIDEBAR TOGGLE -------------------- */
+  useEffect(() => {
+    const handler = () => setSidebarOpen(true);
+    window.addEventListener("toggle-sidebar", handler);
+    return () => window.removeEventListener("toggle-sidebar", handler);
+  }, []);
+
+  /* -------------------- INIT FLOW (THE IMPORTANT PART) -------------------- */
+  /* -------------------- AUTH GUARD -------------------- */
+  if (!loading && !user && !isGuest) {
+    return null;
+  }
 
   useEffect(() => {
-  if (user) {
-    fetchCollections();
-  }
-}, [user, fetchCollections]);
+    if (loading) return;
 
-  
-  // Drag logic
+    if (user) {
+      fetchCollections();
+      return;
+    }
+
+    if (isGuest && !guestInitialized) {
+      setGuestInitialized();
+    }
+  }, [
+    loading,
+    user,
+    isGuest,
+    guestInitialized,
+    fetchCollections,
+    setGuestInitialized,
+  ]);
+
+
+  /* -------------------- SPLIT DRAG -------------------- */
   const startDrag = (e: React.MouseEvent) => {
+    if (isMobile) return;
     e.preventDefault();
     setIsDragging(true);
   };
@@ -40,16 +76,11 @@ export default function Dashboard() {
 
   const onDrag = (e: MouseEvent) => {
     if (!isDragging || !splitRef.current) return;
-    const container = splitRef.current;
-    const rect = container.getBoundingClientRect();
+
+    const rect = splitRef.current.getBoundingClientRect();
     let percentage = ((e.clientX - rect.left) / rect.width) * 100;
     percentage = Math.max(30, Math.min(80, percentage));
-    const editor = container.querySelector<HTMLDivElement>(':scope > div:first-child');
-    const response = container.querySelector<HTMLDivElement>(':scope > div:last-child');
-    if (editor && response) {
-      editor.style.width = `${percentage}%`;
-      response.style.width = `${100 - percentage}%`;
-    }
+
     setSplitWidth(percentage);
     localStorage.setItem("reqflow-split", percentage.toString());
   };
@@ -58,9 +89,6 @@ export default function Dashboard() {
     if (isDragging) {
       window.addEventListener("mousemove", onDrag);
       window.addEventListener("mouseup", stopDrag);
-    } else {
-      window.removeEventListener("mousemove", onDrag);
-      window.removeEventListener("mouseup", stopDrag);
     }
     return () => {
       window.removeEventListener("mousemove", onDrag);
@@ -68,6 +96,7 @@ export default function Dashboard() {
     };
   }, [isDragging]);
 
+  /* -------------------- LOADING -------------------- */
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-white text-lg">
@@ -75,68 +104,100 @@ export default function Dashboard() {
       </div>
     );
   }
+  if (!user && !isGuest) {
+    return null;
+  }
 
 
+  /* -------------------- RENDER -------------------- */
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-900/70 backdrop-blur-md text-gray-100">
-      {/* Topbar */}
-      <div className="z-20 shadow-lg shadow-gray-800/40">
-        <Topbar />
-      </div>
+    <>
+      <Helmet>
+        <title>Dashboard · ReqFlow | OpenGraph Labs</title>
+        <meta
+          name="description"
+          content="ReqFlow dashboard by OpenGraph Labs. Design, send, and manage API requests with a modern developer workflow."
+        />
+      </Helmet>
 
-      {/* Main Workspace */}
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Sidebar */}
-        <div
-          className={`transition-all duration-300 md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-            } z-30`}
-        >
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        </div>
+      <ThemeProvider>
+        <div className="min-h-screen md:h-screen flex flex-col
+            overflow-y-auto md:overflow-y-hidden overflow-x-hidden
+            bg-gray-900/70 backdrop-blur-md text-gray-100">
 
-        {/* Mobile Menu */}
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="absolute top-20 left-3 md:hidden bg-gradient-to-r from-brand-purple to-brand-teal text-white p-2 rounded-lg shadow-md hover:opacity-90 transition z-40"
-        >
-          ☰
-        </button>
-
-        {/* Workspace Area */}
-        <div className="flex-1 flex flex-col overflow-hidden px-2 md:px-4">
-          {/* Tabs */}
-          <div className="mb-3">
-            <RequestTabs />
+          {/* Topbar */}
+          <div className="z-20 shadow-lg shadow-gray-800/40 flex-shrink-0">
+            <Topbar />
           </div>
 
-          {/* Editor + Response */}
-          <div
-            ref={splitRef}
-            className="flex flex-1 overflow-hidden rounded-2xl border border-gray-700 bg-gray-800/40 shadow-inner shadow-gray-900/50 backdrop-blur-xl relative transition-all"
-          >
-            {/* Request Editor */}
-            <div className="overflow-auto transition-all duration-200" style={{ width: `${splitWidth}%` }}>
-              <RequestEditor />
-            </div>
+          {/* Main */}
+          <div className="flex flex-1 overflow-hidden">
 
-            {/* Divider */}
+            {/* Sidebar */}
             <div
-              onMouseDown={startDrag}
-              className={`hidden md:block w-2 cursor-col-resize transition-all duration-150 rounded-full bg-white/10 hover:bg-white/20 hover:shadow-lg ${isDragging ? "bg-white/30 shadow-xl" : ""
-                }`}
-              style={{ backdropFilter: "blur(6px)" }}
-            />
-
-            {/* JSON Viewer */}
-            <div
-              className="flex-1 overflow-auto border-t md:border-t-0 md:border-l border-gray-700 transition-all duration-200"
-              style={{ width: `${100 - splitWidth}%` }}
+              className={`transition-all duration-300 md:translate-x-0 ${sidebarOpen
+                ? "translate-x-0"
+                : "-translate-x-full md:translate-x-0"
+                } z-30 flex-shrink-0`}
             >
-              <JsonViewer />
+              <Sidebar
+                isOpen={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+              />
+            </div>
+
+            {/* Workspace */}
+            <div className="flex flex-1 flex-col overflow-hidden px-2 md:px-4">
+
+              {/* Tabs */}
+              <div className="flex-shrink-0 mb-3 z-10">
+                <RequestTabs />
+              </div>
+
+              {/* Editor + Response */}
+              <div
+                ref={splitRef}
+                className="flex flex-col md:flex-row md:flex-1
+                  overflow-visible md:overflow-hidden
+                  rounded-2xl border border-gray-700
+                  bg-gray-800/40 shadow-inner backdrop-blur-xl"
+              >
+                {/* Editor */}
+                <div
+                  className="flex flex-col overflow-hidden"
+                  style={!isMobile ? { width: `${splitWidth}%` } : {}}
+                >
+                  <RequestEditor />
+                </div>
+
+                {/* Divider */}
+                <div
+                  onMouseDown={startDrag}
+                  className={`hidden md:block w-2 cursor-col-resize
+                    bg-white/10 hover:bg-white/20
+                    ${isDragging ? "bg-white/30 shadow-xl" : ""}`}
+                />
+
+                {/* Response */}
+                <div
+                  className="flex flex-col border-t md:border-t-0 md:border-l
+                    border-gray-700"
+                  style={
+                    !isMobile
+                      ? { width: `${100 - splitWidth}%` }
+                      : { maxHeight: "80vh" }
+                  }
+                >
+                  <div className="flex-1 overflow-auto">
+                    <JsonViewer />
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </ThemeProvider>
+    </>
   );
 }

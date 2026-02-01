@@ -4,19 +4,21 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import passport from "passport";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "./swagger.json";
 import runtimeRoutes from "./routes/runtimeRoutes";
 import connectDB from "./config/db";
-import "./passport";
+import passport from "passport";
+import { initPassport } from "./passport";
 import authRoutes from "./routes/authRoutes";
 import collectionRoutes from "./routes/collectionRoutes";
 import requestRoutes from "./routes/requestRoutes";
 import guestRoutes from "./routes/guestRoutes";
+import { attachUser } from "./middleware/attachUser";
 
-dotenv.config();
+dotenv.config({ path: __dirname + "/../.env" });
+
 
 const app: Application = express();
 
@@ -27,7 +29,10 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: [
+      "http://localhost:3000",
+      "https://reqflow.onlineappsandservices.online",
+    ],
     credentials: true,
     exposedHeaders: [
       "x-guest-limit",
@@ -35,6 +40,12 @@ app.use(
     ],
   })
 );
+app.use(attachUser);
+
+// --- Health check (for Cloudflare Worker) ---
+app.get("/api/__health", (req, res) => {
+  res.status(200).send("ok");
+});
 
 // 🔍 DEBUG (temporary)
 app.use((req, res, next) => {
@@ -48,7 +59,7 @@ app.use((req, res, next) => {
 
 app.use(morgan("dev"));
 app.use(passport.initialize());
-
+initPassport();
 // --- Routes ---
 app.use("/api/auth", authRoutes);
 app.use("/api/runtime", runtimeRoutes);

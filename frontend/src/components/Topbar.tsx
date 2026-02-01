@@ -3,35 +3,70 @@ import { useContext, useState } from "react";
 import { ThemeContext } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { FaMoon, FaSun, FaSignOutAlt, FaUserSecret } from "react-icons/fa";
+import { createPortal } from "react-dom";
+import { FiMenu } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { startTransition } from "react";
 
 export default function Topbar() {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useContext(ThemeContext);
   const { user, isGuest, logout } = useAuth();
   const [showModal, setShowModal] = useState(false);
 
-  const confirmLogout = () => {
-    logout();
+  const confirmLogout = async () => {
     setShowModal(false);
+    await logout();
+
+    startTransition(() => {
+      navigate("/", { replace: true });
+    });
   };
+
 
   const showLogout = user || isGuest;
 
   return (
     <>
       {/* Topbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b
-        bg-gray-100 border-gray-300
-        dark:bg-gray-900 dark:border-gray-800
-        shadow-sm
-      ">
-        {/* Brand */}
-        <h1 className="text-lg font-semibold bg-gradient-to-r from-indigo-500 via-purple-500 to-teal-400 bg-clip-text text-transparent">
-          ReqFlow
-        </h1>
+      <div
+        className="
+          flex items-center justify-between
+          px-4 py-2
+          border-b border-gray-300
+          bg-gray-100/80 backdrop-blur-md
+          dark:bg-gray-900/70 dark:border-gray-700
+          shadow-sm
+        "
+      >
+        {/* Left */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new Event("toggle-sidebar"))}
+            className="
+              md:hidden p-2 rounded-md
+              bg-gray-200 hover:bg-gray-300
+              dark:bg-gray-800 dark:hover:bg-gray-700
+              transition
+            "
+            aria-label="Open menu"
+          >
+            <FiMenu size={20} />
+          </button>
 
-        {/* Right Controls */}
-        <div className="flex items-center gap-4">
-          {/* User / Guest Label */}
+          <h1
+            className="
+              text-xl sm:text-2xl font-bold tracking-wide
+              bg-gradient-to-r from-indigo-500 via-purple-500 to-teal-400
+              bg-clip-text text-transparent
+            "
+          >
+            ReqFlow
+          </h1>
+        </div>
+
+        {/* Right */}
+        <div className="flex items-center gap-2 sm:gap-4">
           {user && (
             <span className="hidden sm:inline text-sm text-gray-700 dark:text-gray-300">
               {user.name || user.email}
@@ -39,19 +74,23 @@ export default function Topbar() {
           )}
 
           {isGuest && (
-            <span className="hidden sm:flex items-center gap-2 px-2 py-1 rounded-md
-              bg-blue-500/10 border border-blue-400/30
-              text-xs text-blue-600 dark:text-blue-300
-            ">
+            <span
+              className="
+                hidden sm:flex items-center gap-2 px-2 py-1 rounded-md
+                bg-blue-500/10 border border-blue-400/30
+                text-xs text-blue-600 dark:text-blue-300
+              "
+            >
               <FaUserSecret />
               Guest Mode
             </span>
           )}
 
-          {/* Theme Toggle */}
+          {/* Theme toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-md
+            className="
+              p-2 rounded-md
               bg-gray-200 hover:bg-gray-300
               dark:bg-gray-800 dark:hover:bg-gray-700
               transition
@@ -61,7 +100,7 @@ export default function Topbar() {
             {theme === "dark" ? (
               <FaSun className="text-yellow-400" />
             ) : (
-              <FaMoon className="text-gray-800" />
+              <FaMoon className="text-gray-800 dark:text-gray-200" />
             )}
           </button>
 
@@ -69,7 +108,8 @@ export default function Topbar() {
           {showLogout && (
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-md
+              className="
+                flex items-center gap-2 px-3 py-2 rounded-md
                 bg-red-500 hover:bg-red-600
                 text-white text-sm font-medium
                 transition
@@ -83,34 +123,76 @@ export default function Topbar() {
         </div>
       </div>
 
-      {/* Logout Confirmation Modal */}
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white/10 border border-white/20 rounded-2xl p-6 backdrop-blur-md shadow-xl max-w-sm text-center text-white">
-            <h2 className="text-lg font-semibold mb-2">Confirm Logout</h2>
-            <p className="text-sm text-gray-200 mb-6">
-              {isGuest
-                ? "Exit guest mode and return to login?"
-                : "Are you sure you want to log out from ReqFlow?"}
-            </p>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 rounded-md bg-gray-500 hover:bg-gray-600 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmLogout}
-                className="px-4 py-2 rounded-md bg-red-500 hover:bg-red-600 transition"
-              >
-                Logout
-              </button>
+      {/* 🔮 Premium Glassmorphism Logout Modal */}
+      {showModal &&
+        createPortal(
+          <div
+            className="
+              fixed inset-0 z-[9999]
+              flex items-center justify-center
+              bg-black/40 backdrop-blur-sm
+            "
+          >
+            <div
+              className="
+                relative w-full max-w-sm mx-4
+                rounded-2xl
+                bg-white/10 dark:bg-gray-900/30
+                border border-white/20
+                backdrop-blur-2xl
+                shadow-2xl
+                p-6 text-center
+                text-gray-900 dark:text-white
+              "
+            >
+              {/* Glow */}
+              <div
+                className="
+                  absolute -inset-1 rounded-2xl
+                  bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400
+                  opacity-20 blur-2xl
+                  pointer-events-none
+                "
+              />
+
+              <h2 className="relative text-lg font-semibold mb-2">
+                Confirm Logout
+              </h2>
+
+              <p className="relative text-sm text-gray-700 dark:text-gray-300 mb-6">
+                {isGuest
+                  ? "Exit guest mode and return to login?"
+                  : "Are you sure you want to log out from ReqFlow?"}
+              </p>
+
+              <div className="relative flex justify-center gap-3">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="
+                    px-4 py-2 rounded-md
+                    bg-gray-300 hover:bg-gray-400
+                    dark:bg-gray-700 dark:hover:bg-gray-600
+                    text-sm transition
+                  "
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={confirmLogout}
+                  className="
+                    px-4 py-2 rounded-md
+                    bg-red-500 hover:bg-red-600
+                    text-white text-sm transition
+                  "
+                >
+                  Logout
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
-

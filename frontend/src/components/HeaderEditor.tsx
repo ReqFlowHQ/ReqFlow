@@ -64,12 +64,12 @@ export default function HeaderEditor({
   return (
     <div className="mt-3 p-4 bg-white/20 dark:bg-gray-900/30 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
       {rows.map((row) => (
-        <div key={row.id} className="flex items-center gap-2 mb-2">
+        <div key={row.id} className="flex flex-col md:flex-row gap-2 mb-2">
           <input
             value={row.key}
             onChange={(e) => updateRow(row.id, "key", e.target.value)}
             placeholder="Header name"
-            className="w-1/3 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full md:w-1/3 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           <input
             value={row.value}

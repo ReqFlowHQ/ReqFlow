@@ -39,7 +39,6 @@ interface ReqFlowState {
   response?: any;
   loading: boolean;
   activeCollection: string | null;
-
   // Core functions
   fetchCollections: () => Promise<void>;
   fetchRequests: (collectionId: string) => Promise<void>;
@@ -56,11 +55,17 @@ interface ReqFlowState {
   saveRequest: (id: string) => Promise<void>;
   deleteRequest: (id: string) => Promise<void>;
   createTemporaryRequest: () => void;
-
+  initializeEmptyRequest: () => void;
+  hardReset: () => void;
+  setGuestInitialized: () => void;
+  guestInitialized: boolean;
+  guestRemaining: number | null;
+  setGuestRemaining: (n: number) => void;
 }
 
 /* ---------------- Store ---------------- */
 export const useRequests = create<ReqFlowState>()(
+
   persist(
     (set, get) => ({
       collections: [],
@@ -70,42 +75,90 @@ export const useRequests = create<ReqFlowState>()(
       activeCollection: null,
       response: null,
       loading: false,
-
       setLoading: (loading) => set({ loading }),
       setResponse: (response) => set({ response }),
       setActiveCollection: (id) => set({ activeCollection: id }),
+      guestRemaining: null,
+      setGuestRemaining: (n) => set({ guestRemaining: n }),
+      initializeGuest: () => {
+        const { guestInitialized } = get();
+        if (guestInitialized) return;
+
+        const tempId = crypto.randomUUID();
+
+        const temp: RequestItem = {
+          _id: tempId,
+          name: "New Request",
+          method: "GET",
+          url: "",
+          headers: {},
+          body: {},
+          isTemporary: true,
+          collection: null,
+          response: null,
+        };
+
+        set({
+          guestInitialized: true,
+          collections: [],
+          requestsByCollection: { __temp__: [temp] },
+          activeTabIds: [tempId],
+          activeRequest: temp,
+          response: null,
+          activeCollection: null,
+        });
+      },
+      guestInitialized: false,
+
+      setGuestInitialized: () => {
+        const { guestInitialized } = get();
+        if (guestInitialized) return;
+
+        const tempId = crypto.randomUUID();
+
+        const temp: RequestItem = {
+          _id: tempId,
+          name: "New Request",
+          method: "GET",
+          url: "",
+          headers: {},
+          body: {},
+          isTemporary: true,
+          collection: null,
+          response: null,
+        };
+
+        set({
+          guestInitialized: true,
+          collections: [],
+          requestsByCollection: { __temp__: [temp] },
+          activeTabIds: [tempId],
+          activeRequest: temp,
+          response: null,
+          activeCollection: null,
+        });
+      },
+
 
       /* -------- Collections -------- */
-      
+
       fetchCollections: async () => {
         try {
-          const token =
-            sessionStorage.getItem("accessToken") ||
-            localStorage.getItem("accessToken");
-          const res = await api.get<Collection[]>("/collections", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const res = await api.get("/collections"); // ✅ cookies auto sent
           set({ collections: res.data });
         } catch (err) {
           console.error("Fetch collections failed", err);
-
-          const isGuest = sessionStorage.getItem("guest") === "true";
-          if (isGuest && !get().activeRequest) {
-            get().createTemporaryRequest();
-          }
         }
-
       },
+
+
+
 
       /* -------- Requests -------- */
       fetchRequests: async (collectionId) => {
         try {
-          const token =
-            sessionStorage.getItem("accessToken") ||
-            localStorage.getItem("accessToken");
           const res = await api.get<RequestItem[]>(
-            `/requests/collection/${collectionId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            `/requests/collection/${collectionId}`
           );
 
           const requestsWithDefaults = res.data.map((r) => ({
@@ -114,7 +167,7 @@ export const useRequests = create<ReqFlowState>()(
             headers: r.headers || {},
             body: r.body || {},
             isTemporary: false,
-            response: null, // always reset
+            response: null,
           }));
 
           set((state) => ({
@@ -128,21 +181,28 @@ export const useRequests = create<ReqFlowState>()(
         }
       },
 
+      hardReset: () => {
+        sessionStorage.removeItem("reqflow-session"); // 🔥 KILL persisted data
+        set({
+          collections: [],
+          requestsByCollection: {},
+          activeTabIds: [],
+          activeRequest: null,
+          response: null,
+          activeCollection: null,
+          loading: false,
+        });
+      },
+
       createCollection: async (name) => {
         try {
-          const token =
-            sessionStorage.getItem("accessToken") ||
-            localStorage.getItem("accessToken");
-          await api.post(
-            "/collections",
-            { name },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          await get().fetchCollections();
+          await api.post("/collections", { name }); // ✅ cookie auth
+          await get().fetchCollections();           // ✅ refresh UI
         } catch (err) {
           console.error("Create collection failed", err);
         }
       },
+
 
       deleteCollection: async (id) => {
         try {
@@ -166,26 +226,126 @@ export const useRequests = create<ReqFlowState>()(
       /* -------- Tabs -------- */
       closeTab: (id) => {
         const { activeTabIds, activeRequest, requestsByCollection } = get();
-        const updatedTabs = activeTabIds.filter((t) => t !== id);
 
-        if (activeRequest && activeRequest._id === id) {
-          const allRequests = Object.values(requestsByCollection || {}).flat();
-          const nextRequest =
-            allRequests.find((r) => updatedTabs.includes(r._id)) || null;
-          set({
-            activeTabIds: updatedTabs,
-            activeRequest: nextRequest,
-            response: nextRequest ? nextRequest.response ?? null : null,
-          });
-        } else {
+        const index = activeTabIds.indexOf(id);
+        if (index === -1) return;
+
+        const updatedTabs = activeTabIds.filter((tid) => tid !== id);
+
+        // If the closed tab was NOT active → just remove it
+        if (activeRequest?._id !== id) {
           set({ activeTabIds: updatedTabs });
+          return;
         }
+
+        // Decide which tab becomes active:
+        // prefer previous, otherwise next
+        let nextTabId: string | null = null;
+
+        if (updatedTabs.length > 0) {
+          if (index - 1 >= 0) {
+            nextTabId = updatedTabs[index - 1];
+          } else {
+            nextTabId = updatedTabs[0];
+          }
+        }
+
+        // Resolve request object
+        const allRequests = [
+          ...Object.values(requestsByCollection || {}).flat(),
+          ...(activeRequest ? [activeRequest] : []),
+        ];
+
+        const nextRequest = nextTabId
+          ? allRequests.find((r) => r._id === nextTabId) || null
+          : null;
+
+        set({
+          activeTabIds: updatedTabs,
+          activeRequest: nextRequest,
+          response: nextRequest?.response ?? null,
+        });
       },
-      
+
+
       createTemporaryRequest: () => {
+        const tempId = crypto.randomUUID();
+
         const temp: RequestItem = {
-          _id: "guest-temp",
-          name: "Guest Request",
+          _id: tempId,
+          name: "New Request",
+          method: "GET",
+          url: "",
+          headers: {},
+          body: {},
+          isTemporary: true,
+          collection: null,
+          response: null,
+        };
+
+        set((state) => ({
+          activeRequest: temp,
+          activeTabIds: [...state.activeTabIds, tempId],
+          requestsByCollection: {
+            ...state.requestsByCollection,
+            __temp__: [...(state.requestsByCollection.__temp__ || []), temp],
+          },
+          response: null,
+        }));
+      },
+
+
+
+
+      createRequest: (collectionId) => {
+        const { activeCollection } = get();
+        if (!collectionId && !activeCollection) {
+          return;
+        }
+
+        const newRequest: RequestItem = {
+          _id: crypto.randomUUID(),
+          name: "New Request",
+          method: "GET",
+          url: "",
+          headers: {},
+          body: {},
+          isTemporary: true,
+          collection: collectionId ?? activeCollection,
+          response: null,
+        };
+
+        set((state) => ({
+          requestsByCollection: {
+            ...state.requestsByCollection,
+            [newRequest.collection!]: [
+              ...(state.requestsByCollection[newRequest.collection!] || []),
+              newRequest,
+            ],
+          },
+          activeTabIds: [...state.activeTabIds, newRequest._id],
+          activeRequest: newRequest,
+          response: null,
+        }));
+      },
+
+
+      openRequest: (request) => {
+        set((state) => ({
+          activeTabIds: state.activeTabIds.includes(request._id)
+            ? state.activeTabIds
+            : [...state.activeTabIds, request._id],
+          activeRequest: request,
+          response: request.response ?? null,
+        }));
+      },
+
+      initializeEmptyRequest: () => {
+        const tempId = crypto.randomUUID();
+
+        const temp: RequestItem = {
+          _id: tempId,
+          name: "New Request",
           method: "GET",
           url: "",
           headers: {},
@@ -196,47 +356,12 @@ export const useRequests = create<ReqFlowState>()(
         };
 
         set({
+          requestsByCollection: { __temp__: [temp] },
+          activeTabIds: [tempId],
           activeRequest: temp,
-          activeTabIds: ["guest-temp"],
           response: null,
+          activeCollection: null,
         });
-      },
-      createRequest: (collectionId) => {
-        const newRequest: RequestItem = {
-          _id: crypto.randomUUID(),
-          name: "New Request",
-          method: "GET",
-          url: "",
-          headers: {},
-          body: {},
-          isTemporary: true,
-          collection: collectionId ?? get().activeCollection,
-          response: null,
-        };
-
-        set((state) => {
-          const updatedRequests = {
-            ...state.requestsByCollection,
-            [newRequest.collection || "uncategorized"]: [
-              ...(state.requestsByCollection[newRequest.collection || "uncategorized"] || []),
-              newRequest,
-            ],
-          };
-          return {
-            requestsByCollection: updatedRequests,
-            activeTabIds: [...state.activeTabIds, newRequest._id],
-            activeRequest: newRequest,
-            response: null,
-          };
-        });
-      },
-
-      openRequest: (request) => {
-        const { activeTabIds } = get();
-        if (!activeTabIds.includes(request._id)) {
-          set({ activeTabIds: [...activeTabIds, request._id] });
-        }
-        set({ activeRequest: request, response: null });
       },
 
       updateRequest: (id, updates) => {
@@ -259,21 +384,27 @@ export const useRequests = create<ReqFlowState>()(
 
       /* -------- Execute -------- */
       executeRequest: async (id) => {
-        const { activeRequest, updateRequest, setResponse, setLoading } = get();
-        if (!activeRequest) return console.error("No active request to execute");
+        const {
+  activeRequest,
+  updateRequest,
+  setResponse,
+  setLoading,
+  setGuestRemaining,
+} = get();
+
+        if (!activeRequest) {
+          console.error("No active request to execute");
+          return;
+        }
 
         setLoading(true);
+        const start = performance.now();
 
         try {
-          const token = sessionStorage.getItem("accessToken") || localStorage.getItem("accessToken") || "";
-
-          const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-
+          // ---------------- TEMP REQUEST ----------------
           if (activeRequest.isTemporary) {
             console.log("🌐 Executing TEMP request...");
-
-            const startTemp = performance.now();
+	  
             const res = await api.post(
               "/requests/proxy",
               {
@@ -282,121 +413,131 @@ export const useRequests = create<ReqFlowState>()(
                 headers: activeRequest.headers,
                 body: activeRequest.body,
               },
-              { headers }
+              { withCredentials: true }
             );
+	    const remaining = res.headers["x-guest-remaining"];
+if (remaining !== undefined) {
+  setGuestRemaining(Number(remaining));
+}
 
-            const durationTemp = performance.now() - startTemp;
-
-            let resData = res.data.data || res.data;
-            if (typeof resData === "string" && resData.trim().startsWith("<!DOCTYPE")) {
-              resData = { html: resData };
-            }
             const enhancedResponse = {
-              data: resData,
-              status: res.data.status || res.status,
-              statusText: res.data.statusText || res.statusText,
-              headers: res.data.headers || res.headers,
-              time: Math.round(durationTemp),
+              data: res.data?.data ?? res.data,
+              status: res.status,
+              statusText: res.statusText,
+              headers: res.data?.headers ?? {}, 
+              time: Math.round(performance.now() - start),
             };
 
-            console.log("Enhanced TEMP response:", enhancedResponse);
-
-            // First update the request with the new response
             updateRequest(activeRequest._id, { response: enhancedResponse });
+            set({ response: enhancedResponse });
 
-            // Then set activeRequest and global response state in one atomic update:
-            const { _id } = activeRequest;
-            if (!_id) {
-              console.error("Request ID missing, cannot update");
-              return;
-            }
-
-            set(state => ({
-              activeRequest: {
-                ...state.activeRequest!,
-                response: enhancedResponse,
-                _id: _id,
-              },
-              response: enhancedResponse,
-            }));
-
-
-          } else {
+          }
+          // ---------------- SAVED REQUEST ----------------
+          else {
             console.log("💾 Executing SAVED request...");
 
-            const startSaved = performance.now();
-            const res = await api.post(`/requests/${activeRequest._id}/execute`, {}, { headers: { Authorization: `Bearer ${token}` } });
-            const durationSaved = performance.now() - startSaved;
+            const res = await api.post(
+              `/requests/${activeRequest._id}/execute`,
+              {},
+              { withCredentials: true }
+            );
 
-            const backendResponse = res.data;
-            const enhancedResponse = { ...backendResponse, time: Math.round(durationSaved) };
-
-            console.log("Enhanced SAVED response:", enhancedResponse);
+            const enhancedResponse = {
+              ...res.data,
+              time: Math.round(performance.now() - start),
+            };
 
             updateRequest(activeRequest._id, { response: enhancedResponse });
-            set({ activeRequest: { ...activeRequest, response: enhancedResponse } });
-            console.log("State after setResponse:", enhancedResponse);
-            setResponse(enhancedResponse);
+            set({
+              activeRequest: {
+                ...activeRequest,
+                response: enhancedResponse,
+              },
+              response: enhancedResponse,
+            });
           }
+
         } catch (err: any) {
-          console.error("❌ Execute request failed:", err.message);
-          setResponse({ error: err.message });
+          // 🔥 unified error handler
+          if (err.response) {
+          const remaining = err.response.headers?.["x-guest-remaining"];
+if (remaining !== undefined) {
+  setGuestRemaining(Number(remaining));
+}
+            const enhancedResponse = {
+              data: err.response.data?.data ?? err.response.data,
+              status: err.response.status,
+              statusText: err.response.statusText,
+              headers: err.response.data?.headers ?? {},
+              time: Math.round(performance.now() - start),
+            };
+
+            updateRequest(activeRequest._id, { response: enhancedResponse });
+            set({ response: enhancedResponse });
+
+          } else {
+            console.error("❌ Network / unknown error", err);
+            setResponse({
+              error:
+                err?.response?.data?.message ||
+                err?.message ||
+                "Request execution failed",
+            });
+          }
         } finally {
           setLoading(false);
         }
       },
 
+
       /* -------- Save / Delete -------- */
       saveRequest: async (id) => {
         const { activeRequest, fetchRequests } = get();
-        const req = activeRequest;
-        if (!req) {
-          console.error("Request not found for save");
-          return;
-        }
-
-        const token =
-          sessionStorage.getItem("accessToken") ||
-          localStorage.getItem("accessToken");
+        if (!activeRequest) return;
 
         try {
-          let savedReq: RequestItem;
+          if (activeRequest.isTemporary) {
+            const { response, isTemporary, ...cleanReq } = activeRequest;
 
-          if (req.isTemporary) {
-            // New request → create
-            const res = await api.post<RequestItem>(
-              "/requests",
-              req,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            savedReq = res.data;
-            get().updateRequest(req._id, { ...savedReq, isTemporary: false });
+            const res = await api.post<RequestItem>("/requests", cleanReq);
+
+            get().updateRequest(activeRequest._id, {
+              ...res.data,
+              isTemporary: false,
+            });
+
+            if (!cleanReq.collection?.trim()) {
+              throw new Error("Request not saved. Please select a collection.");
+            }
+
+            await fetchRequests(cleanReq.collection);
           } else {
-            // Existing request → update
-            await api.put(
-              `/requests/${id}`,
-              req,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            savedReq = req;
+            const { response, ...cleanReq } = activeRequest;
+
+            await api.put(`/requests/${id}`, cleanReq);
+
+            if (!cleanReq.collection?.trim()) {
+              throw new Error("Request not saved. Please select a collection.");
+            }
+
+            await fetchRequests(cleanReq.collection);
           }
-          if (!req.collection || req.collection.trim() === "") {
-            throw new Error("Request not saved. Please select a collection.");
-          }
-          if (req.collection) await fetchRequests(req.collection);
         } catch (err: any) {
-          const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Unknown error";
+          const msg =
+            err.response?.data?.error ||
+            err.response?.data?.message ||
+            err.message ||
+            "Unknown error";
+
           console.error("Save request failed:", msg);
           throw new Error(msg);
         }
       },
 
+
       deleteRequest: async (id) => {
         const { activeRequest, fetchRequests } = get();
-        if (!activeRequest) {
-          console.error("Request not found for delete");
-          return;
-        }
+        if (!activeRequest) return;
 
         const token =
           sessionStorage.getItem("accessToken") ||
@@ -404,20 +545,39 @@ export const useRequests = create<ReqFlowState>()(
 
         try {
           if (!activeRequest.isTemporary) {
-            await api.delete(`/requests/${id}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+            await api.delete(`/requests/${id}`);
           }
+
 
           if (activeRequest.collection) {
             await fetchRequests(activeRequest.collection);
           }
 
-          set({ activeRequest: null, response: null });
+          // 🔥 FIX: remove tab + clear active request
+          set((state) => ({
+            activeTabIds: state.activeTabIds.filter(
+              (tid) => tid !== activeRequest._id
+            ),
+            activeRequest: null,
+            response: null,
+          }));
         } catch (err: any) {
           console.error("Delete request failed:", err.response?.data || err.message);
         }
       },
+      reset: () =>
+        set({
+          collections: [],
+          requestsByCollection: {},
+          activeTabIds: [],
+          activeRequest: null,
+          response: null,
+          activeCollection: null,
+          loading: false,
+        }),
+
+
+
 
     }),
     {
@@ -427,10 +587,10 @@ export const useRequests = create<ReqFlowState>()(
         collections: state.collections,
         requestsByCollection: state.requestsByCollection,
         activeTabIds: state.activeTabIds,
-        activeRequest: state.activeRequest,
         activeCollection: state.activeCollection,
-        loading: state.loading,
+        guestInitialized: state.guestInitialized,
       }),
+
     }
   )
 );

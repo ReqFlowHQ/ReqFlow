@@ -9,21 +9,28 @@ export default function RequestTabs() {
     activeRequest,
     closeTab,
     openRequest,
-    createRequest,
+    createTemporaryRequest,
     requestsByCollection,
   } = useRequests();
 
-  const allRequests = Object.values(requestsByCollection || {}).flat();
+  /* -------------------- BUILD REQUEST LOOKUP -------------------- */
+  const requestMap = new Map<string, any>();
 
-  const hasTabs = activeTabIds && activeTabIds.length > 0;
+  for (const list of Object.values(requestsByCollection || {})) {
+    for (const r of list) {
+      requestMap.set(r._id, r);
+    }
+  }
+
+  const hasTabs = activeTabIds.length > 0;
 
   return (
     <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-700 min-h-[44px]">
-      {/* Tabs container */}
+      {/* Tabs */}
       <div className="flex overflow-x-auto w-full">
         {hasTabs ? (
           activeTabIds.map((id) => {
-            const request = allRequests.find((r) => r._id === id);
+            const request = requestMap.get(id);
             if (!request) return null;
 
             const isActive = activeRequest?._id === id;
@@ -32,13 +39,13 @@ export default function RequestTabs() {
             return (
               <div
                 key={id}
+                onClick={() => openRequest(request)}
                 className={clsx(
                   "flex items-center px-3 py-2 cursor-pointer border-r border-gray-200 dark:border-gray-700 select-none transition-colors",
                   isActive
                     ? "bg-gradient-to-r from-brand-teal to-brand-purple text-white"
                     : "bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-300"
                 )}
-                onClick={() => openRequest(request)}
               >
                 <span className="text-sm font-medium truncate max-w-[140px]">
                   {title}
@@ -62,10 +69,10 @@ export default function RequestTabs() {
         )}
       </div>
 
-      {/* Action buttons */}
+      {/* Actions */}
       <div className="flex items-center gap-2 px-2">
         <button
-          onClick={() => createRequest?.()}
+          onClick={createTemporaryRequest}
           className="p-2 rounded-full bg-brand-teal hover:bg-brand-purple text-white transition"
           title="New Request"
         >
@@ -74,7 +81,9 @@ export default function RequestTabs() {
 
         <button
           onClick={() => {
-            if (activeRequest?._id) closeTab(activeRequest._id);
+            if (activeRequest?._id) {
+              closeTab(activeRequest._id);
+            }
           }}
           className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition"
           title="Close Current Request"

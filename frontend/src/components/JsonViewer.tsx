@@ -70,10 +70,13 @@ export default function JsonViewer() {
   const { status, statusText, time, headers } = currentResponse;
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 border-l border-gray-300 dark:border-gray-700">
+    <div
+      data-json-viewer
+      className="flex flex-col h-full min-h-0 bg-gray-50 dark:bg-gray-900 border-l border-gray-300 dark:border-gray-700">
+
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-100 dark:bg-gray-800">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b bg-gray-100 dark:bg-gray-800">
         <div className="flex items-center gap-2 text-sm">
           <span
             className={`px-2 py-1 rounded text-white ${status >= 200 && status < 300
@@ -96,7 +99,7 @@ export default function JsonViewer() {
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`px-3 py-1 text-xs rounded ${viewMode === mode
+              className={`px-3 py-2 text-xs rounded ${viewMode === mode
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                 }`}
@@ -110,18 +113,18 @@ export default function JsonViewer() {
       {/* Body */}
       <div className="flex-1 overflow-auto p-4 font-mono text-sm text-gray-800 dark:text-gray-100">
         {viewMode === "headers" && (
-          <pre className="whitespace-pre-wrap">
+          <pre className="whitespace-pre-wrap break-words overflow-x-auto">
             {JSON.stringify(headers || {}, null, 2)}
           </pre>
         )}
 
         {viewMode !== "headers" && parsed && (
           parsed.type === "json" && viewMode === "pretty" ? (
-            <pre className="whitespace-pre-wrap">
+            <pre className="whitespace-pre-wrap break-words overflow-x-auto">
               {parsed.pretty}
             </pre>
           ) : (
-            <pre className="whitespace-pre-wrap">
+            <pre className="whitespace-pre-wrap break-words overflow-x-auto">
               {viewMode === "pretty" ? parsed.pretty : parsed.raw}
             </pre>
           )

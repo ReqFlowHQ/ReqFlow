@@ -4,8 +4,8 @@ import passport from "passport";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 import { protect } from "../middleware/auth";
+import { attachUser } from "../middleware/attachUser";
 const router = express.Router();
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 const isProd = process.env.NODE_ENV === "production";
 
 // --- Google OAuth ---
@@ -16,80 +16,112 @@ router.get(
 
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: `${FRONTEND_URL}/login`, session: false }),
+  passport.authenticate("google", {
+    failureRedirect: "/login",
+    session: false,
+  }),
   async (req, res) => {
+    const frontendUrl =
+      process.env.FRONTEND_URL ?? "http://localhost:3000";
+
     const user = req.user as any;
 
-    // ✅ Create JWT token
     const accessToken = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET!,
       { expiresIn: "1h" }
     );
 
-    // ✅ Redirect to frontend with token
     res
-      .cookie("token", accessToken, {
+      .cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: isProd,                 // ❗ false on localhost
+        secure: isProd,
         sameSite: isProd ? "none" : "lax",
         maxAge: 60 * 60 * 1000,
+        path: "/",
       })
-      .redirect(`${FRONTEND_URL}/dashboard`);
-
-
+      .redirect(`${frontendUrl}/dashboard`);
   }
 );
+
 
 // --- GitHub OAuth ---
 router.get(
   "/github",
-  passport.authenticate("github", { scope: ["user:email"], session: false })
+  passport.authenticate("github", {
+    scope: ["user:email"],
+    session: false,
+  })
 );
 
+
+// --- GitHub OAuth ---
 router.get(
   "/github/callback",
-  passport.authenticate("github", { failureRedirect: `${FRONTEND_URL}/login`, session: false }),
+  passport.authenticate("github", {
+    failureRedirect: "/login",
+    session: false,
+  }),
   async (req, res) => {
+    const frontendUrl =
+      process.env.FRONTEND_URL ?? "http://localhost:3000";
+
     const user = req.user as any;
-    // ✅ Create JWT token
+
     const accessToken = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET!,
       { expiresIn: "1h" }
     );
 
-    // ✅ Redirect to frontend with token
     res
-      .cookie("token", accessToken, {
+      .cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: isProd,                 // ❗ false on localhost
+        secure: isProd,
         sameSite: isProd ? "none" : "lax",
         maxAge: 60 * 60 * 1000,
+        path: "/",
       })
-      .redirect(`${FRONTEND_URL}/dashboard`);
-
-
+      .redirect(`${frontendUrl}/dashboard`);
   }
 );
 
-router.get("/me", protect, async (req, res) => {
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
 
-  const user = await User.findById(
-    (req as any).userId
-  ).select("-password");
+router.get("/me", attachUser, async (req, res) => {
+  if (!req.userId) {
+    return res.status(200).json({ user: null });
+  }
 
-  res.json({ user });
+  const user = await User.findById(req.userId).select("-password");
+  return res.json({ user });
 });
+
 
 
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("token").json({ success: true });
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    path: "/",
+  });
+
+  return res.json({ success: true });
 });
+
+router.post("/force-logout", (req, res) => {
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    path: "/",
+  });
+
+  return res.json({ success: true });
+});
+
+
 
 
 export default router;

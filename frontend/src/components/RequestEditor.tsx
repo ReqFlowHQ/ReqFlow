@@ -7,48 +7,48 @@ import { FaPaperPlane, FaTrash, FaSave } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import RequestContentTabs from "./RequestContentTabs";
 import api from "../api/axios";
-
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
 export default function RequestEditor() {
   /* -------------------- HOOKS -------------------- */
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const navigate = useNavigate();
+  const isMobile = window.innerWidth < 768;
 
-  const isGuest =
-    sessionStorage.getItem("guest") === "true" && !user;
+
+
   const [resetAt, setResetAt] = React.useState<string | null>(null);
   const [countdown, setCountdown] = React.useState<string>("");
 
-  const [guestRemaining, setGuestRemaining] =
-    React.useState<number | null>(null);
-
   const {
     activeRequest,
-    loading = false,
-    updateRequest = () => { },
-    deleteRequest = async () => { },
-    saveRequest = async () => { },
-    setLoading = () => { },
-    setResponse = () => { },
+    activeCollection,
+    loading,
+    updateRequest,
+    deleteRequest,
+    saveRequest,
+    executeRequest,
+    guestRemaining,
   } = useRequests();
+
+
 
   /* -------------------- INIT GUEST QUOTA -------------------- */
   // ✅ ADDED: initialize guest quota visually
   React.useEffect(() => {
-    if (!isGuest) return;
+  if (!isGuest) return;
 
-    api.get("/guest/status").then((res) => {
-      if (typeof res.data?.remaining === "number") {
-        setGuestRemaining(res.data.remaining);
-      }
+  api.get("/guest/status").then((res) => {
+    if (typeof res.data?.remaining === "number") {
+      useRequests.getState().setGuestRemaining(res.data.remaining);
+    }
 
-      // ✅ ADD THIS
-      if (res.data?.resetAt) {
-        setResetAt(res.data.resetAt);
-      }
-    });
-  }, [isGuest]);
+    if (res.data?.resetAt) {
+      setResetAt(res.data.resetAt);
+    }
+  });
+}, [isGuest]);
+
   /* -------------------- COUNTDOWN TIMER -------------------- */
   React.useEffect(() => {
     if (!resetAt) return;
@@ -98,182 +98,173 @@ export default function RequestEditor() {
   /* -------------------- ACTIONS -------------------- */
   const handleSend = async () => {
     try {
-      setLoading(true);
+      await executeRequest(requestId);
 
-      const res = await api.post("/runtime/execute", {
-        request: {
-          method: activeRequest.method,
-          url: activeRequest.url,
-          headers: activeRequest.headers,
-          body:
-            activeRequest.method !== "GET" && activeRequest.body
-              ? activeRequest.body
-              : null,
-        },
-        meta: {
-          save: !activeRequest.isTemporary,
-          requestId: activeRequest._id ?? null,
-        },
-      });
-
-      // ✅ SINGLE SOURCE OF TRUTH (success)
-      const remaining = res.headers["x-guest-remaining"];
-      if (remaining !== undefined) {
-        setGuestRemaining(Number(remaining));
+      // 🔥 re-fetch quota after execution
+      if (isMobile) {
+        setTimeout(() => {
+          document
+            .querySelector('[data-json-viewer]')
+            ?.scrollIntoView({ behavior: "smooth" });
+        }, 150);
       }
 
-      setResponse(res.data);
       toast.success("Request executed successfully 🚀");
     } catch (err: any) {
-      // ✅ ALSO update quota on error (429)
-      const remaining =
-        err?.response?.headers?.["x-guest-remaining"];
+      toast.error(err.message || "Request failed ❌");
+    }
+  };
 
-      if (remaining !== undefined) {
-        setGuestRemaining(Number(remaining));
-      }
 
-      toast.error(
-        err?.response?.data?.message || "Request failed ❌"
-      );
-    } finally {
-      setLoading(false);
+  const handleDelete = async () => {
+    if (!requestId) return;
+
+    try {
+      await deleteRequest(requestId);
+      toast.success("Request deleted 🗑️");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete request ❌");
     }
   };
 
   const handleSave = async () => {
     if (!requestId) return;
-    await saveRequest(requestId);
-    toast.success("Request saved successfully ✅");
+
+    if (!activeCollection) {
+      toast.error("Please select a collection before saving");
+      return;
+    }
+
+    // 🔥 CRITICAL FIX
+    updateRequest(requestId, { collection: activeCollection });
+
+    try {
+      await saveRequest(requestId);
+      toast.success("Request saved successfully ✅");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save request ❌");
+    }
   };
 
-  const handleDelete = async () => {
-    if (!requestId) return;
-    await deleteRequest(requestId);
-    toast.success("Request deleted 🗑️");
-  };
 
   /* -------------------- UI -------------------- */
   return (
-    <div className="flex flex-col h-full bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <div className="flex flex-col h-full">
+
+
 
       {/* Top bar */}
-      <div className="flex items-center gap-2 p-3 flex-wrap border-b bg-gray-100 border-gray-300 dark:bg-gray-900 dark:border-gray-700">
+      {/* Top bar */}
+      <div className="p-3 border-b border-gray-300 bg-gray-100 dark:bg-gray-900 dark:border-gray-700">
+        <div className="flex items-center gap-2 flex-wrap">
 
-        {isGuest && (
-          <div
-            className="w-full mb-2 flex items-center justify-between rounded-md
-    bg-blue-500/10 border border-blue-400/30
-    px-3 py-1 text-xs text-blue-300"
-          >
-            <div>
+          {isGuest && (
+            <div className="w-full mb-2 flex items-center justify-between rounded-md
+        bg-blue-500/10 border border-blue-400/30 px-3 py-1 text-xs text-blue-300">
               <div>
-                GET requests left:{" "}
-                <strong>{guestRemaining ?? 5}</strong> / 5
+                GET requests left: <strong>{guestRemaining ?? 5}</strong> / 5
+                {countdown && (
+                  <div className="text-[11px] opacity-70">{countdown}</div>
+                )}
               </div>
-
-              {/* ✅ COUNTDOWN */}
-              {countdown && (
-                <div className="text-[11px] opacity-70">
-                  {countdown}
-                </div>
+              {guestRemaining === 0 && (
+                <span className="opacity-80">Login required</span>
               )}
             </div>
-
-            {guestRemaining === 0 && (
-              <span className="opacity-80">
-                Login required to continue
-              </span>
-            )}
-          </div>
-        )}
+          )}
 
 
-        {/* Method selector */}
-        <select
-          value={activeRequest.method}
-          onChange={(e) => {
-            const selected = e.target.value;
-            if (isMethodLocked(selected)) return;
-            updateRequest(requestId, { method: selected });
-          }}
-          className="bg-white text-gray-900 border border-gray-300
+          {/* Method selector */}
+          <select
+            value={activeRequest.method}
+            onChange={(e) => {
+              const selected = e.target.value;
+              if (isMethodLocked(selected)) return;
+              updateRequest(requestId, { method: selected });
+            }}
+            className="bg-white text-gray-900 border border-gray-300
             dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600
             px-2 py-1 rounded-md"
-        >
-          {METHODS.map((m) => (
-            <option key={m} value={m} disabled={isMethodLocked(m)}>
-              {m} {isMethodLocked(m) ? "🔒" : ""}
-            </option>
-          ))}
-        </select>
-
-        {/* URL */}
-        <input
-          value={activeRequest.url || ""}
-          onChange={(e) =>
-            updateRequest(requestId, { url: e.target.value })
-          }
-          placeholder="Enter request URL..."
-          className="flex-1 min-w-[180px] px-3 py-1 rounded-md
-            bg-white text-gray-900 border border-gray-300
-            dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
-        />
-
-        {/* Name */}
-        <input
-          value={activeRequest.name || ""}
-          onChange={(e) =>
-            updateRequest(requestId, { name: e.target.value })
-          }
-          placeholder="Request name"
-          className="flex-1 min-w-[180px] px-3 py-1 rounded-md
-            bg-white text-gray-900 border border-gray-300
-            dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
-        />
-
-        {/* Buttons */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleSave}
-            className="bg-yellow-500 px-3 py-1 rounded-md text-white"
           >
-            <FaSave /> Save
-          </button>
+            {METHODS.map((m) => (
+              <option key={m} value={m} disabled={isMethodLocked(m)}>
+                {m} {isMethodLocked(m) ? "🔒" : ""}
+              </option>
+            ))}
+          </select>
 
-          <button
-            onClick={handleDelete}
-            className="bg-red-600 px-3 py-1 rounded-md text-white"
-          >
-            <FaTrash /> Delete
-          </button>
-
-          <button
-            onClick={() => {
-              if (guestLimitReached) {
-                navigate("/login");
-                return;
+          {/* URL */}
+          <div className="flex flex-col md:flex-row gap-2 flex-1">
+            <input
+              value={activeRequest.url || ""}
+              onChange={(e) =>
+                updateRequest(requestId, { url: e.target.value })
               }
-              handleSend();
-            }}
-            disabled={loading || guestLimitReached}
-            className={`px-3 py-1 rounded-md text-white ${guestLimitReached
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-brand-teal hover:bg-brand-purple"
-              }`}
-          >
-            <FaPaperPlane />
-            {guestLimitReached
-              ? "Login for Full Access"
-              : loading
-                ? "Sending..."
-                : "Send"}
-          </button>
+              placeholder="Enter request URL..."
+              className="flex-1 min-w-[180px] px-3 py-1 rounded-md
+            bg-white text-gray-900 border border-gray-300
+            dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+            /></div>
+
+          {/* Name */}
+          <div className="flex flex-col md:flex-row gap-2 flex-1">
+            <input
+              value={activeRequest.name || ""}
+              onChange={(e) =>
+                updateRequest(requestId, { name: e.target.value })
+              }
+              placeholder="Request name"
+              className="flex-1 min-w-[180px] px-3 py-1 rounded-md
+            bg-white text-gray-900 border border-gray-300
+            dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 relative z-20">
+              <button
+                onClick={handleSave}
+                disabled={isGuest}
+                className="bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-md text-white text-sm transition"
+              >
+                <FaSave /> Save
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="bg-rose-600 hover:bg-rose-700 px-3 py-2 rounded-md text-white text-sm transition"
+              >
+                <FaTrash /> Delete
+              </button>
+
+              <button
+                onClick={() => {
+                  if (guestLimitReached) {
+                    navigate("/login");
+                    return;
+                  }
+                  handleSend();
+                }}
+                disabled={loading || guestLimitReached}
+                className={`px-3 py-2 rounded-md text-white text-sm ${guestLimitReached
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-brand-teal hover:bg-brand-purple"
+                  }`}
+              >
+                <FaPaperPlane />
+                {guestLimitReached
+                  ? "Login for Full Access"
+                  : loading
+                    ? "Sending..."
+                    : "Send"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-
       {/* Body / Headers */}
-      <div className="flex flex-col p-3">
+      <div className="flex-1 overflow-auto p-3">
         <RequestContentTabs
           headers={activeRequest.headers || {}}
           body={activeRequest.body || {}}
@@ -281,6 +272,7 @@ export default function RequestEditor() {
           updateRequest={updateRequest}
         />
       </div>
-    </div>
+    </div >
+
   );
 }

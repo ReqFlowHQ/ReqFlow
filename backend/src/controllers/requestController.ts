@@ -2,6 +2,8 @@
 import { Request, Response } from "express";
 import RequestModel from "../models/Request";
 import axios, { AxiosRequestConfig } from "axios";
+import GuestUsage from "../models/GuestUsage";
+import crypto from "crypto";
 
 /* ----------------------------- Normalize Headers ----------------------------- */
 const normalizeHeaders = (
@@ -27,28 +29,29 @@ const normalizeHeaders = (
 
 /* ----------------------------- Create Request ----------------------------- */
 export const createRequest = async (req: Request, res: Response) => {
-  try{
-  const userId = (req as any).userId;
-  const { name, method, url, headers, body, collection } = req.body;
-  if (!url || typeof url !== 'string' || url.trim() === "") {
-     return res.status(400).json({ error: "URL must be a non-empty string." });
-    
-  }
-  const request = await RequestModel.create({
-    user: userId,
-    name,
-    method,
-    url,
-    headers,
-    body,
-    collection,
-  });
+  try {
+    const userId = (req as any).userId;
+    const { name, method, url, headers, body, collection } = req.body;
+    if (!url || typeof url !== 'string' || url.trim() === "") {
+      return res.status(400).json({ error: "URL must be a non-empty string." });
 
-  res.status(201).json(request);}
-  catch(err: any){
+    }
+    const request = await RequestModel.create({
+      user: userId,
+      name,
+      method,
+      url,
+      headers,
+      body,
+      collection,
+    });
+
+    res.status(201).json(request);
+  }
+  catch (err: any) {
     const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Unknown error"
     console.error("Error creating request:", err);
-    res.status(500).json({ error: "URL must be a non-empty string" });    
+    res.status(500).json({ error: "URL must be a non-empty string" });
     throw new Error(msg);
   }
 };
@@ -58,20 +61,29 @@ export const executeAndSave = async (req: Request, res: Response) => {
   try {
     const requestId = req.params.id;
     const dbRequest = await RequestModel.findById(requestId);
-    if (!dbRequest) return res.status(404).json({ error: "Request not found" });
+    if (!dbRequest) {
+      return res.status(404).json({ error: "Request not found" });
+    }
 
     console.log("💾 Executing SAVED request for ID:", requestId);
 
+    const method = dbRequest.method.toUpperCase();
+
     const axiosConfig: AxiosRequestConfig = {
-      method: dbRequest.method.toLowerCase(),
+      method: method.toLowerCase() as any,
       url: dbRequest.url,
       headers: dbRequest.headers || {},
-      data: dbRequest.body || {},
       validateStatus: () => true,
       timeout: 15000,
     };
 
+    // ✅ ONLY attach body for non-GET methods
+    if (method !== "GET" && dbRequest.body) {
+      axiosConfig.data = dbRequest.body;
+    }
+
     const response = await axios(axiosConfig);
+
     const contentType = response.headers["content-type"] || "";
     let responseData = response.data;
 
@@ -81,17 +93,18 @@ export const executeAndSave = async (req: Request, res: Response) => {
       responseData = { text: responseData };
     }
 
-    // ✅ Convert headers to a plain JS object
+    // Normalize headers before saving
     const plainHeaders: Record<string, string> = {};
     for (const key in response.headers) {
       const value = (response.headers as any)[key];
-      plainHeaders[key] = typeof value === "string" ? value : JSON.stringify(value);
+      plainHeaders[key] =
+        typeof value === "string" ? value : JSON.stringify(value);
     }
 
     dbRequest.response = {
       status: response.status,
       statusText: response.statusText,
-      headers: plainHeaders, // <-- fixed type
+      headers: plainHeaders,
       data: responseData,
     };
 
@@ -111,6 +124,7 @@ export const executeAndSave = async (req: Request, res: Response) => {
     });
   }
 };
+
 
 /* ----------------------------- Get Requests by Collection ----------------------------- */
 export const getRequestsByCollection = async (req: Request, res: Response) => {
@@ -132,34 +146,66 @@ export const deleteRequest = async (req: Request, res: Response) => {
 
 /* ----------------------------- Temporary Execution ----------------------------- */
 export const executeTemp = async (req: Request, res: Response) => {
-  const { url, method = "GET", headers = {}, body = {} } = req.body;
-  if (!url || !/^https?:\/\//i.test(url)) {
-    return res.status(400).json({ error: "Invalid URL" });
-  }
-
   try {
+    const userId = (req as any).userId;
+    console.log("EXEC TEMP userId =", (req as any).userId);
+
+    /* ───────────── Validate request ───────────── */
+    const { url, method = "GET", headers = {}, body } = req.body;
+
+    if (!url || !/^https?:\/\//i.test(url)) {
+      return res.status(400).json({ error: "Invalid URL" });
+    }
+
+    const upperMethod = method.toUpperCase();
+
+    /* ───────────── Execute request ───────────── */
     const response = await axios({
-      method: method.toLowerCase(),
+      method: upperMethod.toLowerCase() as any,
       url,
-      headers,
-      data: body,
+      headers: {
+        // 🔥 REQUIRED for Google / Bing / Cloudflare
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        ...headers, // user headers override defaults
+      },
       validateStatus: () => true,
+      timeout: 15000,
+      ...(upperMethod !== "GET" && body ? { data: body } : {}),
     });
 
-    return res.status(200).json({
-      data: response.data,
+    /* ───────────── Normalize response ───────────── */
+    const contentType = response.headers["content-type"] || "";
+    let responseData = response.data;
+
+    if (typeof responseData === "string" && contentType.includes("text/html")) {
+      responseData = { html: responseData };
+    } else if (typeof responseData === "string") {
+      responseData = { text: responseData };
+    }
+    if ((req as any).guestMeta) {
+      res.setHeader("x-guest-limit", (req as any).guestMeta.limit);
+      res.setHeader("x-guest-remaining", (req as any).guestMeta.remaining);
+    }
+
+    return res.status(response.status).json({
+      data: responseData,
       status: response.status,
       statusText: response.statusText,
       headers: response.headers,
     });
   } catch (err: any) {
-    console.error("Execute temp request failed:", err.message);
+    console.error("❌ Execute temp request failed:", err.message);
     return res.status(500).json({
       error: err.message,
       details: err.response?.data || null,
     });
   }
 };
+
+
 
 
 export const updateRequest = async (req: Request, res: Response) => {

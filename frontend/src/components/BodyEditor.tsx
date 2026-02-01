@@ -38,7 +38,7 @@ export default function BodyEditor({
         value={localBody}
         onChange={handleChange}
         placeholder="Enter raw body (JSON, form data, text, etc.)"
-        className="w-full h-48 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+        className="w-full h-40 md:h-48px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
       />
     </div>
   );

@@ -24,7 +24,7 @@ export default function RequestContentTabs({
         {/* Headers Tab */}
         <button
           onClick={() => setActiveTab("Headers")}
-          className={`flex-1 px-4 py-2 text-center font-medium transition relative
+          className={`flex-1 px-3 py-2 text-center font-medium text-sm transition relative
             rounded-tl-2xl rounded-tr-none
             ${
               activeTab === "Headers"
@@ -38,7 +38,7 @@ export default function RequestContentTabs({
         {/* Body Tab */}
         <button
           onClick={() => setActiveTab("Body")}
-          className={`flex-1 px-4 py-2 text-center font-medium transition relative
+          className={`flex-1 px-3 py-2 text-center font-medium text-sm transition relative
             rounded-tr-2xl rounded-tl-none
             ${
               activeTab === "Body"
