@@ -284,7 +284,6 @@ This feature is currently in development and will be introduced in an upcoming r
 - Nginx reverse proxy  
 - Swagger API Docs  
 
----
 
 ## Running with Docker
 
