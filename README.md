@@ -90,40 +90,149 @@ MongoDB is used for persistence.
 # Project Structure
 
 ```text
-backend/
-├─ src/
-│  ├─ config/
-│  ├─ controllers/
-│  ├─ middleware/
-│  ├─ models/
-│  ├─ routes/
-│  ├─ types/
-│  ├─ utils/
-│  ├─ db.ts
-│  ├─ index.ts
-│  ├─ passport.ts
-│  └─ swagger.json
-├─ Dockerfile
-├─ package.json
-└─ tsconfig.json
+├── backend
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── src
+│   │   ├── config
+│   │   │   └── db.ts
+│   │   ├── controllers
+│   │   │   ├── authController.ts
+│   │   │   ├── collectionController.ts
+│   │   │   ├── requestController.ts
+│   │   │   └── runtimeController.ts
+│   │   ├── db.ts
+│   │   ├── index.ts
+│   │   ├── middleware
+│   │   │   ├── attachUser.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── guest.ts
+│   │   │   └── protectOptional.ts
+│   │   ├── models
+│   │   │   ├── Collection.ts
+│   │   │   ├── GuestUsage.ts
+│   │   │   ├── RefreshToken.ts
+│   │   │   ├── Request.ts
+│   │   │   └── User.ts
+│   │   ├── passport.ts
+│   │   ├── routes
+│   │   │   ├── authRoutes.ts
+│   │   │   ├── collectionRoutes.ts
+│   │   │   ├── guestRoutes.ts
+│   │   │   ├── requestRoutes.ts
+│   │   │   └── runtimeRoutes.ts
+│   │   ├── swagger.json
+│   │   ├── types
+│   │   │   ├── express.d.ts
+│   │   │   └── globals.d.ts
+│   │   └── utils
+│   │       ├── emailTemplates.ts
+│   │       ├── executeRequest.ts
+│   │       ├── generateToken.ts
+│   │       └── sendEmail.ts
+│   ├── swagger.json
+│   └── tsconfig.json
+├── deploy.sh
+├── docker-compose.yml
+├── frontend
+│   ├── cloudflared.deb
+│   ├── Dockerfile
+│   ├── favicon
+│   │   ├── android-icon-144x144.png
+│   │   ├── android-icon-192x192.png
+│   │   ├── android-icon-36x36.png
+│   │   ├── android-icon-48x48.png
+│   │   ├── android-icon-72x72.png
+│   │   ├── android-icon-96x96.png
+│   │   ├── apple-icon-114x114.png
+│   │   ├── apple-icon-120x120.png
+│   │   ├── apple-icon-144x144.png
+│   │   ├── apple-icon-152x152.png
+│   │   ├── apple-icon-180x180.png
+│   │   ├── apple-icon-57x57.png
+│   │   ├── apple-icon-60x60.png
+│   │   ├── apple-icon-72x72.png
+│   │   ├── apple-icon-76x76.png
+│   │   ├── apple-icon.png
+│   │   ├── apple-icon-precomposed.png
+│   │   ├── browserconfig.xml
+│   │   ├── favicon-16x16.png
+│   │   ├── favicon-32x32.png
+│   │   ├── favicon-96x96.png
+│   │   ├── favicon.ico
+│   │   ├── labs.png
+│   │   ├── manifest.json
+│   │   ├── ms-icon-144x144.png
+│   │   ├── ms-icon-150x150.png
+│   │   ├── ms-icon-310x310.png
+│   │   └── ms-icon-70x70.png
+│   ├── favicon.png
+│   ├── index.html
+│   ├── nginx.conf
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── postcss.config.js
+│   ├── public
+│   │   ├── assets
+│   │   │   └── reqflow-logo.png
+│   │   ├── og-preview.png
+│   │   ├── robots.txt
+│   │   └── sitemap.xml
+│   ├── server.cjs
+│   ├── src
+│   │   ├── api
+│   │   │   └── axios.ts
+│   │   ├── App.tsx
+│   │   ├── assets
+│   │   │   ├── dashboard-preview.png
+│   │   │   └── og-preview.png
+│   │   ├── components
+│   │   │   ├── AppLoader.tsx
+│   │   │   ├── BodyEditor.tsx
+│   │   │   ├── HeaderEditor.tsx
+│   │   │   ├── JsonViewer.tsx
+│   │   │   ├── PrivateRoute.tsx
+│   │   │   ├── ReqFlowLogo.tsx
+│   │   │   ├── RequestContentTabs.tsx
+│   │   │   ├── RequestEditor.tsx
+│   │   │   ├── RequestTabs.tsx
+│   │   │   ├── Reveal.tsx
+│   │   │   ├── RouteTransition.tsx
+│   │   │   ├── SafeLink.tsx
+│   │   │   ├── ScrollToTop.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   └── Topbar.tsx
+│   │   ├── context
+│   │   │   ├── AuthContext.tsx
+│   │   │   └── ThemeContext.tsx
+│   │   ├── hooks
+│   │   │   ├── usePreventBack.ts
+│   │   │   └── useRequests.ts
+│   │   ├── main.tsx
+│   │   ├── pages
+│   │   │   ├── About.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── Landing.tsx
+│   │   │   ├── Login.tsx
+│   │   │   ├── Maintenance.tsx
+│   │   │   ├── Privacy.tsx
+│   │   │   ├── Register.tsx
+│   │   │   ├── Terms.tsx
+│   │   │   └── VerifyEmail.tsx
+│   │   ├── tailwind.css
+│   │   └── vite-env.d.ts
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   └── vite.config.ts
+├── LICENSE
+├── package.json
+├── package-lock.json
+├── README.md
+├── RELEASENOTES.md
+└── structure.txt
 
-frontend/
-├─ src/
-│  ├─ api/
-│  ├─ components/
-│  ├─ context/
-│  ├─ hooks/
-│  ├─ pages/
-│  ├─ App.tsx
-│  └─ main.tsx
-├─ Dockerfile
-├─ index.html
-└─ tailwind.config.js
-
-.gitignore
-docker-compose.yml
-LICENSE
-RELEASENOTES.md
+21 directories, 121 files
 ```
 
 ---
