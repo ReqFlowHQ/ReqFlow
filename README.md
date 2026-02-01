@@ -24,7 +24,7 @@
 
 ---
 
-Released as v1.0.0 · Actively maintained
+Released as v1.0.1 · Actively maintained
 
 # ReqFlow — API Testing & Request Workflow Platform
 
