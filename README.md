@@ -94,6 +94,9 @@ MongoDB is used for persistence.
 
 # Project Structure
 
+> 📁 This is the full repository structure as of the latest release.
+> The canonical source of truth is `structure.txt`.
+
 ```text
 ├── backend
 │   ├── Dockerfile
