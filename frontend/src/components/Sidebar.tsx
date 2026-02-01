@@ -63,15 +63,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <aside
-        className={`
-          ${isMobile
-            ? `fixed top-0 left-0 z-50 h-full w-[280px] transform transition-transform duration-300
-               ${isOpen ? "translate-x-0" : "-translate-x-full"}`
-            : "relative h-full w-64 flex-shrink-0"}
-          bg-gray-100 dark:bg-gray-900
-          border-r border-gray-300 dark:border-gray-700
-        `}
-      >
+  className={`
+    ${isMobile
+      ? `fixed top-0 left-0 z-50 h-full w-[280px] transform transition-transform duration-300
+         ${isOpen ? "translate-x-0" : "-translate-x-full"}`
+      : "relative h-full w-64 flex-shrink-0"}
+    flex flex-col   // 🔥 ADD THIS
+    bg-gray-100 dark:bg-gray-900
+    border-r border-gray-300 dark:border-gray-700
+  `}
+>
+
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -86,7 +88,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Create collection */}
-        <div className="p-3 flex gap-2 border-b border-gray-300 dark:border-gray-700">
+        <div className="flex-shrink-0 p-3 flex gap-2 border-b border-gray-300 dark:border-gray-700">
           <input
             disabled={isGuest}
             value={newName}
@@ -104,7 +106,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Collections */}
-        <div className="overflow-y-auto p-2 h-full">
+        <div className="flex-1 overflow-y-auto p-2 min-h-0">
           {collections.map((c) => {
             const requests = requestsByCollection?.[c._id] || [];
 
