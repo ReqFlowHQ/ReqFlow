@@ -27,7 +27,7 @@
 ReqFlow is a modern, container-ready **API testing and request workflow platform** for developers.
 It is designed as a clean, scalable alternative to tools like Postman, focused on structured request management, authentication workflows, and Docker-based deployment.
 
-This is the **official ReqFlow repository**, developed and maintained by **OpenGraph Labs**.
+This is the official **ReqFlow repository**, developed and maintained by the **ReqFlow** team.
 
 🔗 Live Platform: https://reqflow.onlineappsandservices.online
 
