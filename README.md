@@ -54,6 +54,7 @@ This is the official **ReqFlow repository**, developed and maintained by the **R
 - Protected API routes  
 - Email verification flow  
 
+
 ### Frontend Workspace
 - Request editor (headers, body, params)  
 - JSON response viewer  
@@ -62,6 +63,7 @@ This is the official **ReqFlow repository**, developed and maintained by the **R
 - Drag-to-resize split view  
 - Light/dark themes  
 - Glassmorphic UI styling  
+
 
 ### Backend API
 - Express + TypeScript  
@@ -72,6 +74,7 @@ This is the official **ReqFlow repository**, developed and maintained by the **R
 - Swagger documentation  
 - Clean controllers + route separation  
 
+
 ### Dockerized Architecture
 Everything runs in containers:
 - Frontend served through **Nginx**  
@@ -79,12 +82,14 @@ Everything runs in containers:
 - Shared network via `docker-compose`  
 - One-command deployment  
 
+
 ### Architecture (High Level)
 
 Frontend (React + Vite) communicates with a Node.js + Express backend.
 Authentication is handled via OAuth 2.0 and JWT.
 Guest users are rate-limited using IP + User-Agent fingerprinting.
 MongoDB is used for persistence.
+
 
 ### Upcoming Feature: Engineer Mode  
 A dedicated workspace designed for power users.  
