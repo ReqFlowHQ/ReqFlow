@@ -357,4 +357,4 @@ MIT License
 
 ---
 
-© 2026 ReqFlow. Created and maintained by Sraman Nandi.
+© 2026 ReqFlow. Created and maintained by OpenGraph Labs.
