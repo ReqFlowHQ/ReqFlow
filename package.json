@@ -1,4 +1,13 @@
 {
+  "scripts": {
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "test": "npm --prefix backend run test && npm --prefix frontend run test",
+    "test:coverage": "npm --prefix backend run test:coverage && npm --prefix frontend run test:coverage",
+    "audit": "npm audit --audit-level=high --omit=dev && npm --prefix backend audit --audit-level=high --omit=dev && npm --prefix frontend audit --audit-level=high --omit=dev",
+    "quality-gate": "npm run lint && npm run typecheck && npm run test && npm run build"
+  },
   "dependencies": {
     "axios": "^1.13.2",
     "cookie-parser": "^1.4.7",

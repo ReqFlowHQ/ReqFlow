@@ -17,11 +17,15 @@ export const attachUser = (
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET as string
-    ) as { userId: string };
+    ) as { userId: string; type?: string };
+
+    if (decoded.type && decoded.type !== "access") {
+      return next();
+    }
 
     req.userId = decoded.userId; // ✅ FIX
-  } catch (err) {
-    console.error("[attachUser] invalid token");
+  } catch {
+    // invalid/expired token: anonymous request
   }
 
   next();

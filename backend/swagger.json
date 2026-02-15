@@ -1,8 +1,223 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.0.3",
   "info": {
     "title": "ReqFlow API",
-    "version": "1.0.0"
+    "version": "1.1.0",
+    "description": "ReqFlow backend API. Auth uses HTTP-only cookies (access + refresh) with CSRF header protection for mutating endpoints."
   },
-  "paths": {}
+  "servers": [
+    { "url": "/" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "accessCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "accessToken"
+      },
+      "csrfHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-csrf-token"
+      }
+    }
+  },
+  "paths": {
+    "/api/__health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": { "description": "OK" }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Get current authenticated user",
+        "responses": {
+          "200": { "description": "User payload or null" }
+        }
+      }
+    },
+    "/api/auth/csrf": {
+      "get": {
+        "summary": "Ensure CSRF cookie is set",
+        "responses": {
+          "204": { "description": "CSRF cookie initialized" }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "summary": "Rotate refresh session and issue fresh access/refresh cookies",
+        "security": [{ "csrfHeader": [] }],
+        "responses": {
+          "200": { "description": "Refreshed session" },
+          "401": { "description": "Invalid refresh token" }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Logout current session",
+        "security": [{ "csrfHeader": [] }],
+        "responses": {
+          "200": { "description": "Logged out" }
+        }
+      }
+    },
+    "/api/auth/force-logout": {
+      "post": {
+        "summary": "Force logout current session",
+        "security": [{ "csrfHeader": [] }],
+        "responses": {
+          "200": { "description": "Logged out" }
+        }
+      }
+    },
+    "/api/guest/status": {
+      "get": {
+        "summary": "Guest usage status",
+        "responses": {
+          "200": { "description": "Guest limit metadata" }
+        }
+      }
+    },
+    "/api/runtime/execute": {
+      "post": {
+        "summary": "Execute a runtime request",
+        "security": [{ "csrfHeader": [] }],
+        "responses": {
+          "200": { "description": "Execution result" },
+          "403": { "description": "Guest method restriction" }
+        }
+      }
+    },
+    "/api/requests/proxy": {
+      "post": {
+        "summary": "Execute temporary request (guest/auth)",
+        "security": [{ "csrfHeader": [] }],
+        "responses": {
+          "200": { "description": "Execution result" },
+          "429": { "description": "Guest limit exhausted" }
+        }
+      }
+    },
+    "/api/collections": {
+      "get": {
+        "summary": "List collections",
+        "security": [{ "accessCookie": [] }],
+        "responses": {
+          "200": { "description": "Collections" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "summary": "Create collection",
+        "security": [{ "accessCookie": [] }, { "csrfHeader": [] }],
+        "responses": {
+          "201": { "description": "Collection created" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/collections/{id}": {
+      "delete": {
+        "summary": "Delete collection",
+        "security": [{ "accessCookie": [] }, { "csrfHeader": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Collection deleted" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/requests": {
+      "post": {
+        "summary": "Create saved request",
+        "security": [{ "accessCookie": [] }, { "csrfHeader": [] }],
+        "responses": {
+          "201": { "description": "Request saved" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/requests/collection/{collectionId}": {
+      "get": {
+        "summary": "List saved requests by collection",
+        "security": [{ "accessCookie": [] }],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Requests" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/requests/{id}/execute": {
+      "post": {
+        "summary": "Execute and persist saved request response",
+        "security": [{ "accessCookie": [] }, { "csrfHeader": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Execution result" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/requests/{id}": {
+      "put": {
+        "summary": "Update saved request",
+        "security": [{ "accessCookie": [] }, { "csrfHeader": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Updated" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "summary": "Delete saved request",
+        "security": [{ "accessCookie": [] }, { "csrfHeader": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Deleted" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    }
+  }
 }

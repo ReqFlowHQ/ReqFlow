@@ -6,5 +6,6 @@ const guestUsageSchema = new mongoose.Schema({
   date: { type: String }, // YYYY-MM-DD
 });
 
-export default mongoose.model("GuestUsage", guestUsageSchema);
+guestUsageSchema.index({ key: 1, date: 1 });
 
+export default mongoose.model("GuestUsage", guestUsageSchema);

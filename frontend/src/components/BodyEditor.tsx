@@ -33,14 +33,13 @@ export default function BodyEditor({
   };
 
   return (
-    <div className="mt-3 p-4 bg-white/20 dark:bg-gray-900/30 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
+    <div className="mt-3 p-4 bg-white/55 dark:bg-slate-900/55 backdrop-blur-md border border-slate-200/70 dark:border-slate-700/70 rounded-xl shadow-sm">
       <textarea
         value={localBody}
         onChange={handleChange}
         placeholder="Enter raw body (JSON, form data, text, etc.)"
-        className="w-full h-40 md:h-48px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white/30 dark:bg-gray-800/40 text-gray-900 dark:text-gray-100 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+        className="w-full h-40 md:h-48 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white/85 dark:bg-slate-800/65 text-slate-900 dark:text-slate-100 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-cyan-400/60 transition"
       />
     </div>
   );
 }
-

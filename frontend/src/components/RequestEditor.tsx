@@ -7,13 +7,14 @@ import { FaPaperPlane, FaTrash, FaSave } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import RequestContentTabs from "./RequestContentTabs";
 import api from "../api/axios";
+import { shallow } from "zustand/shallow";
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
 export default function RequestEditor() {
   /* -------------------- HOOKS -------------------- */
-  const { user, isGuest } = useAuth();
+  const { isGuest } = useAuth();
   const navigate = useNavigate();
-  const isMobile = window.innerWidth < 768;
+  const isMobile = window.innerWidth < 1024;
 
 
 
@@ -29,7 +30,19 @@ export default function RequestEditor() {
     saveRequest,
     executeRequest,
     guestRemaining,
-  } = useRequests();
+  } = useRequests(
+    (state) => ({
+      activeRequest: state.activeRequest,
+      activeCollection: state.activeCollection,
+      loading: state.loading,
+      updateRequest: state.updateRequest,
+      deleteRequest: state.deleteRequest,
+      saveRequest: state.saveRequest,
+      executeRequest: state.executeRequest,
+      guestRemaining: state.guestRemaining,
+    }),
+    shallow
+  );
 
 
 
@@ -95,22 +108,30 @@ export default function RequestEditor() {
   const isMethodLocked = (method: string) =>
     isGuest && method !== "GET";
 
+  const scrollToResponseMobile = () => {
+    if (!isMobile) return;
+    requestAnimationFrame(() => {
+      const responseEl = document.querySelector("[data-json-viewer]");
+      if (!responseEl) return;
+
+      const targetY = Math.max(
+        0,
+        responseEl.getBoundingClientRect().top + window.scrollY - 96
+      );
+
+      window.scrollTo({ top: targetY, behavior: "smooth" });
+    });
+  };
+
   /* -------------------- ACTIONS -------------------- */
   const handleSend = async () => {
     try {
       await executeRequest(requestId);
-
-      // 🔥 re-fetch quota after execution
-      if (isMobile) {
-        setTimeout(() => {
-          document
-            .querySelector('[data-json-viewer]')
-            ?.scrollIntoView({ behavior: "smooth" });
-        }, 150);
-      }
+      scrollToResponseMobile();
 
       toast.success("Request executed successfully 🚀");
     } catch (err: any) {
+      scrollToResponseMobile();
       toast.error(err.message || "Request failed ❌");
     }
   };
@@ -149,19 +170,18 @@ export default function RequestEditor() {
 
   /* -------------------- UI -------------------- */
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-x-hidden">
 
 
 
       {/* Top bar */}
       {/* Top bar */}
-      <div className="p-3 border-b border-gray-300 bg-gray-100 dark:bg-gray-900 dark:border-gray-700">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="p-3 border-b border-slate-200/70 bg-white/55 dark:bg-slate-900/55 dark:border-slate-700/70 backdrop-blur-xl">
+        <div className="flex w-full flex-col gap-2">
 
           {isGuest && (
-            <div className="w-full mb-2 flex items-center justify-between rounded-md
-        bg-blue-500/10 border border-blue-400/30 px-3 py-1 text-xs text-blue-300">
-              <div>
+            <div className="w-full mb-2 flex items-center justify-between rounded-lg bg-sky-500/10 border border-sky-400/40 px-3 py-2 text-xs text-sky-700 dark:text-sky-300">
+              <div className="font-medium">
                 GET requests left: <strong>{guestRemaining ?? 5}</strong> / 5
                 {countdown && (
                   <div className="text-[11px] opacity-70">{countdown}</div>
@@ -174,68 +194,73 @@ export default function RequestEditor() {
           )}
 
 
-          {/* Method selector */}
-          <select
-            value={activeRequest.method}
-            onChange={(e) => {
-              const selected = e.target.value;
-              if (isMethodLocked(selected)) return;
-              updateRequest(requestId, { method: selected });
-            }}
-            className="bg-white text-gray-900 border border-gray-300
-            dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600
-            px-2 py-1 rounded-md"
-          >
-            {METHODS.map((m) => (
-              <option key={m} value={m} disabled={isMethodLocked(m)}>
-                {m} {isMethodLocked(m) ? "🔒" : ""}
-              </option>
-            ))}
-          </select>
+          <div className="flex w-full min-w-0 flex-col gap-2">
+            <div className="flex w-full min-w-0 flex-col gap-2 lg:flex-row lg:items-center">
+            {/* Method selector */}
+            <select
+              value={activeRequest.method}
+              onChange={(e) => {
+                const selected = e.target.value;
+                if (isMethodLocked(selected)) return;
+                updateRequest(requestId, { method: selected });
+              }}
+              className="w-full lg:w-[108px] lg:shrink-0 bg-white text-gray-900 border border-gray-300
+              dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
+              px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+            >
+              {METHODS.map((m) => (
+                <option key={m} value={m} disabled={isMethodLocked(m)}>
+                  {m} {isMethodLocked(m) ? "🔒" : ""}
+                </option>
+              ))}
+            </select>
 
-          {/* URL */}
-          <div className="flex flex-col md:flex-row gap-2 flex-1">
-            <input
-              value={activeRequest.url || ""}
-              onChange={(e) =>
-                updateRequest(requestId, { url: e.target.value })
-              }
-              placeholder="Enter request URL..."
-              className="flex-1 min-w-[180px] px-3 py-1 rounded-md
-            bg-white text-gray-900 border border-gray-300
-            dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
-            /></div>
+            {/* URL */}
+            <div className="w-full min-w-0 flex-1 lg:min-w-[220px]">
+              <input
+                value={activeRequest.url || ""}
+                onChange={(e) =>
+                  updateRequest(requestId, { url: e.target.value })
+                }
+                placeholder="Enter request URL..."
+                className="w-full min-w-0 px-3 py-2 rounded-lg
+              bg-white/95 text-gray-900 border border-slate-300 shadow-sm
+              dark:bg-slate-800/90 dark:text-gray-100 dark:border-slate-600
+              focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+              />
+            </div>
 
-          {/* Name */}
-          <div className="flex flex-col md:flex-row gap-2 flex-1">
-            <input
-              value={activeRequest.name || ""}
-              onChange={(e) =>
-                updateRequest(requestId, { name: e.target.value })
-              }
-              placeholder="Request name"
-              className="flex-1 min-w-[180px] px-3 py-1 rounded-md
-            bg-white text-gray-900 border border-gray-300
-            dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
-            />
-          </div>
+            {/* Name */}
+            <div className="w-full min-w-0 flex-1 lg:min-w-[220px]">
+              <input
+                value={activeRequest.name || ""}
+                onChange={(e) =>
+                  updateRequest(requestId, { name: e.target.value })
+                }
+                placeholder="Request name"
+                className="w-full min-w-0 px-3 py-2 rounded-lg
+              bg-white/95 text-gray-900 border border-slate-300 shadow-sm
+              dark:bg-slate-800/90 dark:text-gray-100 dark:border-slate-600
+              focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+              />
+            </div>
+            </div>
 
-          {/* Buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2 relative z-20">
+            {/* Buttons (always second row) */}
+            <div className="relative z-20 flex w-full flex-wrap items-center gap-2">
               <button
                 onClick={handleSave}
                 disabled={isGuest}
-                className="bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-md text-white text-sm transition"
+                className="inline-flex min-h-[42px] flex-1 lg:flex-none items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-lg text-white text-sm font-medium transition shadow-sm"
               >
-                <FaSave /> Save
+                <FaSave /> <span>Save</span>
               </button>
 
               <button
                 onClick={handleDelete}
-                className="bg-rose-600 hover:bg-rose-700 px-3 py-2 rounded-md text-white text-sm transition"
+                className="inline-flex min-h-[42px] flex-1 lg:flex-none items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 px-3 py-2 rounded-lg text-white text-sm font-medium transition shadow-sm"
               >
-                <FaTrash /> Delete
+                <FaTrash /> <span>Delete</span>
               </button>
 
               <button
@@ -247,9 +272,9 @@ export default function RequestEditor() {
                   handleSend();
                 }}
                 disabled={loading || guestLimitReached}
-                className={`px-3 py-2 rounded-md text-white text-sm ${guestLimitReached
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-brand-teal hover:bg-brand-purple"
+                className={`inline-flex min-h-[42px] w-full lg:w-auto items-center justify-center gap-2 px-3 py-2 rounded-lg text-white text-sm font-medium shadow-sm ${guestLimitReached
+                  ? "bg-slate-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 hover:brightness-110"
                   }`}
               >
                 <FaPaperPlane />

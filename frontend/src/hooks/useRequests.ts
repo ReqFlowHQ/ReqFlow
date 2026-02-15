@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import api from "../api/axios";
-import axios, { type AxiosResponse } from "axios";
 
 // Add this type declaration for ImportMeta.env
 
@@ -367,11 +366,42 @@ export const useRequests = create<ReqFlowState>()(
       updateRequest: (id, updates) => {
         set((state) => {
           const updated = { ...state.requestsByCollection };
-          for (const colId in updated) {
-            updated[colId] = updated[colId].map((r) =>
-              r._id === id ? { ...r, ...updates } : r
-            );
+          let found = false;
+
+          const preferredCollectionIds = [
+            state.activeRequest?.collection ?? "__temp__",
+            "__temp__",
+          ].filter((value, index, arr): value is string =>
+            Boolean(value) && arr.indexOf(value) === index
+          );
+
+          for (const colId of preferredCollectionIds) {
+            const list = updated[colId];
+            if (!list) continue;
+
+            const idx = list.findIndex((request) => request._id === id);
+            if (idx === -1) continue;
+
+            const nextList = [...list];
+            nextList[idx] = { ...nextList[idx], ...updates };
+            updated[colId] = nextList;
+            found = true;
+            break;
           }
+
+          if (!found) {
+            for (const [colId, list] of Object.entries(updated)) {
+              const idx = list.findIndex((request) => request._id === id);
+              if (idx === -1) continue;
+
+              const nextList = [...list];
+              nextList[idx] = { ...nextList[idx], ...updates };
+              updated[colId] = nextList;
+              found = true;
+              break;
+            }
+          }
+
           return {
             requestsByCollection: updated,
             activeRequest:
@@ -506,7 +536,9 @@ if (res.status >= 400) {
 
     // 🔥 IMPORTANT
     throw new Error(
-      err.response.data?.message || "Request failed"
+      err.response.data?.message ||
+      err.response.data?.error ||
+      "Request failed"
     );
   }
 

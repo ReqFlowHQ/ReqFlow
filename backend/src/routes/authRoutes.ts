@@ -1,12 +1,52 @@
 // FILE: backend/src/routes/authRoutes.ts
 import express from "express";
 import passport from "passport";
-import jwt from "jsonwebtoken";
 import User from "../models/User";
-import { protect } from "../middleware/auth";
 import { attachUser } from "../middleware/attachUser";
+import {
+  accessTokenMaxAgeMs,
+  createRefreshSession,
+  refreshTokenMaxAgeMs,
+  revokeRefreshToken,
+  rotateRefreshToken,
+  signAccessToken,
+} from "../services/authSession";
 const router = express.Router();
 const isProd = process.env.NODE_ENV === "production";
+
+const setAuthCookies = (res: express.Response, accessToken: string, refreshToken: string) => {
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    maxAge: accessTokenMaxAgeMs,
+    path: "/",
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    maxAge: refreshTokenMaxAgeMs,
+    path: "/api/auth",
+  });
+};
+
+const clearAuthCookies = (res: express.Response) => {
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
+  });
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    path: "/api/auth",
+  });
+};
 
 // --- Google OAuth ---
 router.get(
@@ -25,22 +65,14 @@ router.get(
       process.env.FRONTEND_URL ?? "http://localhost:3000";
 
     const user = req.user as any;
+    const accessToken = signAccessToken(user._id.toString());
+    const refreshToken = await createRefreshSession(user._id.toString(), {
+      userAgent: req.headers["user-agent"] || "unknown",
+      ip: req.socket.remoteAddress || "unknown",
+    });
 
-    const accessToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET!,
-      { expiresIn: "1h" }
-    );
-
-    res
-      .cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? "none" : "lax",
-        maxAge: 60 * 60 * 1000,
-        path: "/",
-      })
-      .redirect(`${frontendUrl}/dashboard`);
+    setAuthCookies(res, accessToken, refreshToken);
+    res.redirect(`${frontendUrl}/dashboard`);
   }
 );
 
@@ -67,22 +99,14 @@ router.get(
       process.env.FRONTEND_URL ?? "http://localhost:3000";
 
     const user = req.user as any;
+    const accessToken = signAccessToken(user._id.toString());
+    const refreshToken = await createRefreshSession(user._id.toString(), {
+      userAgent: req.headers["user-agent"] || "unknown",
+      ip: req.socket.remoteAddress || "unknown",
+    });
 
-    const accessToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET!,
-      { expiresIn: "1h" }
-    );
-
-    res
-      .cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? "none" : "lax",
-        maxAge: 60 * 60 * 1000,
-        path: "/",
-      })
-      .redirect(`${frontendUrl}/dashboard`);
+    setAuthCookies(res, accessToken, refreshToken);
+    res.redirect(`${frontendUrl}/dashboard`);
   }
 );
 
@@ -96,29 +120,47 @@ router.get("/me", attachUser, async (req, res) => {
   return res.json({ user });
 });
 
+router.get("/csrf", (_req, res) => {
+  return res.status(204).send();
+});
 
+router.post("/refresh", async (req, res) => {
+  const token = req.cookies?.refreshToken;
+  if (!token) {
+    clearAuthCookies(res);
+    return res.status(401).json({ error: "Missing refresh token" });
+  }
+
+  const rotated = await rotateRefreshToken(token, {
+    headers: req.headers as Record<string, unknown>,
+    remoteAddress: req.socket.remoteAddress,
+  });
+  if (!rotated.ok) {
+    clearAuthCookies(res);
+    return res.status(401).json({ error: rotated.reason });
+  }
+
+  setAuthCookies(res, rotated.accessToken, rotated.refreshToken);
+  return res.json({ ok: true });
+});
 
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("accessToken", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    path: "/",
-  });
-
-  return res.json({ success: true });
+  const refreshToken = req.cookies?.refreshToken;
+  if (refreshToken) {
+    revokeRefreshToken(refreshToken).catch(() => undefined);
+  }
+  clearAuthCookies(res);
+  return res.json({ success: true, revoked: Boolean(refreshToken) });
 });
 
 router.post("/force-logout", (req, res) => {
-  res.clearCookie("accessToken", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    path: "/",
-  });
-
-  return res.json({ success: true });
+  const refreshToken = req.cookies?.refreshToken;
+  if (refreshToken) {
+    revokeRefreshToken(refreshToken).catch(() => undefined);
+  }
+  clearAuthCookies(res);
+  return res.json({ success: true, revoked: Boolean(refreshToken) });
 });
 
 

@@ -13,9 +13,8 @@ export default function ReqFlowLogo({ className = "w-8 h-8" }: Props) {
       className={`inline-block object-contain ${className}`}
       loading="eager"
       decoding="sync"
-      fetchpriority="high"
+      fetchPriority="high"
       draggable={false}
     />
   );
 }
-

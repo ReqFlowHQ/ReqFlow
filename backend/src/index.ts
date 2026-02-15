@@ -16,9 +16,11 @@ import collectionRoutes from "./routes/collectionRoutes";
 import requestRoutes from "./routes/requestRoutes";
 import guestRoutes from "./routes/guestRoutes";
 import { attachUser } from "./middleware/attachUser";
+import { csrfAndOriginProtection, ensureCsrfCookie, getTrustedOrigins } from "./middleware/security";
 
 dotenv.config({ path: __dirname + "/../.env" });
 
+const corsOrigins = getTrustedOrigins();
 
 const app: Application = express();
 
@@ -26,13 +28,16 @@ const app: Application = express();
 app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
+app.use(ensureCsrfCookie);
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://reqflow.onlineappsandservices.online",
-    ],
+    origin: (origin, callback) => {
+      if (!origin || corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
     exposedHeaders: [
       "x-guest-limit",
@@ -40,21 +45,12 @@ app.use(
     ],
   })
 );
+app.use(csrfAndOriginProtection);
 app.use(attachUser);
 
 // --- Health check (for Cloudflare Worker) ---
 app.get("/api/__health", (req, res) => {
   res.status(200).send("ok");
-});
-
-// 🔍 DEBUG (temporary)
-app.use((req, res, next) => {
-  res.on("finish", () => {
-    if (req.path.includes("/runtime/execute")) {
-      console.log("🔍 RESPONSE HEADERS SENT:", res.getHeaders());
-    }
-  });
-  next();
 });
 
 app.use(morgan("dev"));

@@ -11,8 +11,8 @@ const connectDB = async (): Promise<void> => {
 
     await mongoose.connect(mongoURI, {
       dbName: "reqflow",
-      // Optional clean connection options
-      autoIndex: true,
+      // Keep index build off in production to reduce startup/lock pressure.
+      autoIndex: process.env.NODE_ENV !== "production",
       connectTimeoutMS: 10000,
     });
 
@@ -24,4 +24,3 @@ const connectDB = async (): Promise<void> => {
 };
 
 export default connectDB;
-

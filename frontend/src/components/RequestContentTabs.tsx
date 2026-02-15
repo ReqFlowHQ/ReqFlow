@@ -18,7 +18,7 @@ export default function RequestContentTabs({
   const [activeTab, setActiveTab] = useState<"Headers" | "Body">("Headers");
 
   return (
-    <div className="mt-4 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white/20 dark:bg-gray-900/30 backdrop-blur-md shadow-sm overflow-hidden">
+    <div className="mt-4 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl shadow-sm overflow-hidden">
       {/* Tabs */}
       <div className="flex relative">
         {/* Headers Tab */}
@@ -28,8 +28,8 @@ export default function RequestContentTabs({
             rounded-tl-2xl rounded-tr-none
             ${
               activeTab === "Headers"
-                ? "text-gray-900 dark:text-white bg-white/30 dark:bg-gray-700/40 backdrop-blur-sm shadow-inner"
-                : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/10 dark:hover:bg-gray-800/30"
+                ? "text-slate-900 dark:text-white bg-white/55 dark:bg-slate-700/45 backdrop-blur-sm shadow-inner"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/20 dark:hover:bg-slate-800/35"
             }`}
         >
           Headers
@@ -42,8 +42,8 @@ export default function RequestContentTabs({
             rounded-tr-2xl rounded-tl-none
             ${
               activeTab === "Body"
-                ? "text-gray-900 dark:text-white bg-white/30 dark:bg-gray-700/40 backdrop-blur-sm shadow-inner"
-                : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/10 dark:hover:bg-gray-800/30"
+                ? "text-slate-900 dark:text-white bg-white/55 dark:bg-slate-700/45 backdrop-blur-sm shadow-inner"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/20 dark:hover:bg-slate-800/35"
             }`}
         >
           Body
@@ -53,7 +53,7 @@ export default function RequestContentTabs({
         <span
           className={`absolute bottom-0 h-1 rounded-full transition-all duration-300 ease-in-out
             ${activeTab === "Headers" ? "left-0 w-1/2" : "left-1/2 w-1/2"}
-            bg-gradient-to-r from-gray-900/70 dark:from-white/70 to-gray-700/50 dark:to-gray-400/50`}
+            bg-gradient-to-r from-cyan-500/80 via-indigo-500/80 to-fuchsia-500/70`}
         ></span>
       </div>
 

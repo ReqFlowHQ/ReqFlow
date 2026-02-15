@@ -2,6 +2,8 @@
 import { useRequests } from "../hooks/useRequests";
 import { FaTimes, FaPlus, FaMinus } from "react-icons/fa";
 import clsx from "clsx";
+import { useMemo } from "react";
+import { shallow } from "zustand/shallow";
 
 export default function RequestTabs() {
   const {
@@ -11,23 +13,35 @@ export default function RequestTabs() {
     openRequest,
     createTemporaryRequest,
     requestsByCollection,
-  } = useRequests();
+  } = useRequests(
+    (state) => ({
+      activeTabIds: state.activeTabIds,
+      activeRequest: state.activeRequest,
+      closeTab: state.closeTab,
+      openRequest: state.openRequest,
+      createTemporaryRequest: state.createTemporaryRequest,
+      requestsByCollection: state.requestsByCollection,
+    }),
+    shallow
+  );
 
   /* -------------------- BUILD REQUEST LOOKUP -------------------- */
-  const requestMap = new Map<string, any>();
-
-  for (const list of Object.values(requestsByCollection || {})) {
-    for (const r of list) {
-      requestMap.set(r._id, r);
+  const requestMap = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const list of Object.values(requestsByCollection || {})) {
+      for (const request of list) {
+        map.set(request._id, request);
+      }
     }
-  }
+    return map;
+  }, [requestsByCollection]);
 
   const hasTabs = activeTabIds.length > 0;
 
   return (
-    <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-700 min-h-[44px]">
+    <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-700/80 min-h-[48px] bg-white/60 dark:bg-slate-900/45 backdrop-blur-md rounded-xl px-1 shadow-sm">
       {/* Tabs */}
-      <div className="flex overflow-x-auto w-full">
+      <div className="flex overflow-x-auto w-full min-w-0">
         {hasTabs ? (
           activeTabIds.map((id) => {
             const request = requestMap.get(id);
@@ -41,17 +55,17 @@ export default function RequestTabs() {
                 key={id}
                 onClick={() => openRequest(request)}
                 className={clsx(
-                  "flex items-center px-3 py-2 cursor-pointer border-r border-gray-200 dark:border-gray-700 select-none transition-colors",
+                  "m-1 flex shrink-0 items-center px-3 py-2 cursor-pointer rounded-lg border border-transparent select-none transition-colors",
                   isActive
-                    ? "bg-gradient-to-r from-brand-teal to-brand-purple text-white"
-                    : "bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-300"
+                    ? "bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 text-white shadow-md"
+                    : "text-slate-700 hover:bg-slate-200/80 dark:text-slate-300 dark:hover:bg-slate-800/80"
                 )}
               >
                 <span className="text-sm font-medium truncate max-w-[140px]">
                   {title}
                 </span>
                 <button
-                  className="ml-2 p-1 hover:text-red-400"
+                  className="ml-2 p-1 rounded hover:bg-black/10 hover:text-rose-300 dark:hover:bg-white/10"
                   onClick={(e) => {
                     e.stopPropagation();
                     closeTab(id);
@@ -63,7 +77,7 @@ export default function RequestTabs() {
             );
           })
         ) : (
-          <div className="flex items-center px-3 py-2 text-sm text-gray-500 italic">
+          <div className="flex items-center px-3 py-2 text-sm text-slate-500 italic">
             No requests open — create or select one from the sidebar.
           </div>
         )}
@@ -73,7 +87,7 @@ export default function RequestTabs() {
       <div className="flex items-center gap-2 px-2">
         <button
           onClick={createTemporaryRequest}
-          className="p-2 rounded-full bg-brand-teal hover:bg-brand-purple text-white transition"
+          className="p-2 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white transition shadow-sm"
           title="New Request"
         >
           <FaPlus size={12} />
@@ -85,7 +99,7 @@ export default function RequestTabs() {
               closeTab(activeRequest._id);
             }
           }}
-          className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition"
+          className="inline-flex p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition shadow-sm"
           title="Close Current Request"
         >
           <FaMinus size={12} />

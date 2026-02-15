@@ -16,6 +16,14 @@ body {
   @apply bg-gray-900 text-gray-100;
 }
 
+/* Prevent iOS auto-zoom on focused form fields, which can distort layout. */
+input,
+select,
+textarea,
+button {
+  font-size: 16px;
+}
+
 @keyframes waveGradient {
   0% {
     background-position: -100% 50%;

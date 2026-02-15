@@ -4,6 +4,7 @@ import { useRequests } from "../hooks/useRequests";
 import { FaFolder, FaPlus, FaTrash, FaTimes } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import type { RequestItem } from "../hooks/useRequests";
+import { shallow } from "zustand/shallow";
 
 
 interface SidebarProps {
@@ -16,17 +17,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const {
     collections,
     requestsByCollection,
-    fetchCollections,
     fetchRequests,
     createCollection,
     deleteCollection,
     openRequest,
     activeCollection,
     setActiveCollection,
-  } = useRequests();
+  } = useRequests(
+    (state) => ({
+      collections: state.collections,
+      requestsByCollection: state.requestsByCollection,
+      fetchRequests: state.fetchRequests,
+      createCollection: state.createCollection,
+      deleteCollection: state.deleteCollection,
+      openRequest: state.openRequest,
+      activeCollection: state.activeCollection,
+      setActiveCollection: state.setActiveCollection,
+    }),
+    shallow
+  );
 
   const [newName, setNewName] = useState("");
-  const isMobile = window.innerWidth < 768;
+  const isMobile = window.innerWidth < 1024;
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -65,41 +77,42 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
   className={`
     ${isMobile
-      ? `fixed top-0 left-0 z-50 h-full w-[280px] transform transition-transform duration-300
+      ? `fixed top-0 left-0 z-50 h-full w-[290px] transform transition-transform duration-300
          ${isOpen ? "translate-x-0" : "-translate-x-full"}`
-      : "relative h-full w-64 flex-shrink-0"}
-    flex flex-col   // 🔥 ADD THIS
-    bg-gray-100 dark:bg-gray-900
-    border-r border-gray-300 dark:border-gray-700
+      : "relative h-full w-72 flex-shrink-0"}
+    flex flex-col
+    ${isMobile ? "bg-white dark:bg-slate-900 backdrop-blur-none" : "bg-white/75 dark:bg-slate-900/60 backdrop-blur-xl"}
+    border-r border-slate-200/70 dark:border-slate-700/70
+    shadow-[0_12px_40px_rgba(15,23,42,0.08)] dark:shadow-[0_15px_45px_rgba(2,6,23,0.35)]
   `}
 >
 
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <FaFolder className="text-brand-teal" />
+        <div className="flex items-center justify-between p-4 border-b border-slate-200/70 dark:border-slate-700/70">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <FaFolder className="text-cyan-500" />
             Collections
           </h2>
           {isMobile && (
-            <button onClick={onClose}>
+            <button className="rounded-md p-1.5 hover:bg-slate-200/70 dark:hover:bg-slate-800/70 transition" onClick={onClose}>
               <FaTimes />
             </button>
           )}
         </div>
 
         {/* Create collection */}
-        <div className="flex-shrink-0 p-3 flex gap-2 border-b border-gray-300 dark:border-gray-700">
+        <div className="flex-shrink-0 p-3 flex gap-2 border-b border-slate-200/70 dark:border-slate-700/70">
           <input
             disabled={isGuest}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="New collection"
-            className="flex-1 px-2 py-1 rounded bg-gray-200 dark:bg-gray-800 text-sm"
+            className="flex-1 px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white/90 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/60 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
           />
           <button
             disabled={isGuest}
             onClick={handleCreate}
-            className="bg-green-600 hover:bg-green-700 text-white px-2 rounded"
+            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 rounded-lg shadow-sm transition"
           >
             <FaPlus size={12} />
           </button>
@@ -115,23 +128,27 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => handleToggleCollection(c._id)}
-                    className="flex-1 text-left px-2 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-800"
+                    className={`flex-1 text-left px-3 py-2 rounded-lg text-sm transition ${
+                      activeCollection === c._id
+                        ? "bg-cyan-500/15 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300"
+                        : "text-slate-700 hover:bg-slate-200/70 dark:text-slate-300 dark:hover:bg-slate-800/70"
+                    }`}
                   >
                     {c.name}
                   </button>
                   <button
                     disabled={isGuest}
                     onClick={() => deleteCollection(c._id)}
-                    className="text-red-500 p-1"
+                    className="text-rose-500 p-2 rounded-md hover:bg-rose-500/10 disabled:opacity-40 disabled:cursor-not-allowed transition"
                   >
                     <FaTrash size={12} />
                   </button>
                 </div>
 
                 {activeCollection === c._id && (
-                  <div className="ml-4 mt-1 space-y-1">
+                  <div className="ml-3 mt-1 space-y-1 border-l border-slate-200 pl-2 dark:border-slate-700">
                     {requests.length === 0 && (
-                      <p className="text-xs text-gray-500 italic">
+                      <p className="text-xs text-slate-500 italic">
                         No requests yet
                       </p>
                     )}
@@ -139,7 +156,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       <button
                         key={r._id}
                         onClick={() => handleOpenRequest(r)}
-                        className="block w-full text-left text-sm px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 truncate"
+                        className="block w-full text-left text-sm px-2 py-1.5 rounded-md truncate transition text-slate-700 hover:bg-slate-200/70 dark:text-slate-300 dark:hover:bg-slate-800/70"
                       >
                         {r.name || "Untitled Request"}
                       </button>

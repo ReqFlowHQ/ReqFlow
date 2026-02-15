@@ -1,36 +1,13 @@
 // FILE: backend/src/controllers/requestController.ts
 import { Request, Response } from "express";
 import RequestModel from "../models/Request";
-import axios, { AxiosRequestConfig } from "axios";
-import GuestUsage from "../models/GuestUsage";
-import crypto from "crypto";
-
-/* ----------------------------- Normalize Headers ----------------------------- */
-const normalizeHeaders = (
-  headers: unknown
-): Record<string, string | number | boolean | null | undefined> => {
-  const normalized: Record<string, string | number | boolean | null | undefined> = {};
-  if (headers && typeof headers === "object") {
-    for (const [key, value] of Object.entries(headers as Record<string, unknown>)) {
-      if (
-        typeof value === "string" ||
-        typeof value === "number" ||
-        typeof value === "boolean" ||
-        value === null
-      ) {
-        normalized[key] = value;
-      } else if (Array.isArray(value)) {
-        normalized[key] = (value as any[]).map(String).join(", ");
-      }
-    }
-  }
-  return normalized;
-};
+import { validateSafeHttpUrl } from "../utils/urlSafety";
+import { executeRequest } from "../utils/executeRequest";
 
 /* ----------------------------- Create Request ----------------------------- */
 export const createRequest = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { name, method, url, headers, body, collection } = req.body;
     if (!url || typeof url !== 'string' || url.trim() === "") {
       return res.status(400).json({ error: "URL must be a non-empty string." });
@@ -49,42 +26,38 @@ export const createRequest = async (req: Request, res: Response) => {
     res.status(201).json(request);
   }
   catch (err: any) {
-    const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Unknown error"
+    const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Unknown error";
     console.error("Error creating request:", err);
-    res.status(500).json({ error: "URL must be a non-empty string" });
-    throw new Error(msg);
+    return res.status(500).json({ error: msg });
   }
 };
 
 /* ----------------------------- Execute and Save ----------------------------- */
 export const executeAndSave = async (req: Request, res: Response) => {
   try {
+    const userId = req.userId;
     const requestId = req.params.id;
-    const dbRequest = await RequestModel.findById(requestId);
+    const dbRequest = await RequestModel.findOne({ _id: requestId, user: userId });
+
     if (!dbRequest) {
       return res.status(404).json({ error: "Request not found" });
     }
 
-    console.log("💾 Executing SAVED request for ID:", requestId);
-
-    const method = dbRequest.method.toUpperCase();
-
-    const axiosConfig: AxiosRequestConfig = {
-      method: method.toLowerCase() as any,
-      url: dbRequest.url,
-      headers: dbRequest.headers || {},
-      validateStatus: () => true,
-      timeout: 15000,
-    };
-
-    // ✅ ONLY attach body for non-GET methods
-    if (method !== "GET" && dbRequest.body) {
-      axiosConfig.data = dbRequest.body;
+    const urlCheck = await validateSafeHttpUrl(dbRequest.url);
+    if (!urlCheck.ok) {
+      return res.status(400).json({ error: `Blocked URL: ${urlCheck.reason}` });
     }
 
-    const response = await axios(axiosConfig);
+    console.log("💾 Executing SAVED request for ID:", requestId);
 
-    const contentType = response.headers["content-type"] || "";
+    const response = await executeRequest(
+      dbRequest.method as any,
+      dbRequest.url,
+      dbRequest.headers || {},
+      dbRequest.method.toUpperCase() !== "GET" ? dbRequest.body : undefined
+    );
+
+    const contentType = ((response.headers as Record<string, unknown>)["content-type"] as string) || "";
     let responseData = response.data;
 
     if (typeof responseData === "string" && contentType.includes("text/html")) {
@@ -96,7 +69,7 @@ export const executeAndSave = async (req: Request, res: Response) => {
     // Normalize headers before saving
     const plainHeaders: Record<string, string> = {};
     for (const key in response.headers) {
-      const value = (response.headers as any)[key];
+      const value = (response.headers as Record<string, unknown>)[key];
       plainHeaders[key] =
         typeof value === "string" ? value : JSON.stringify(value);
     }
@@ -128,10 +101,19 @@ export const executeAndSave = async (req: Request, res: Response) => {
 
 /* ----------------------------- Get Requests by Collection ----------------------------- */
 export const getRequestsByCollection = async (req: Request, res: Response) => {
-  const userId = (req as any).userId;
+  const userId = req.userId;
   const { collectionId } = req.params;
+  const parsedLimit = Number(req.query.limit);
+  const limit =
+    Number.isFinite(parsedLimit) && parsedLimit > 0
+      ? Math.min(parsedLimit, 500)
+      : 200;
 
-  const requests = await RequestModel.find({ user: userId, collection: collectionId });
+  const requests = await RequestModel.find({ user: userId, collection: collectionId })
+    .select("name method url headers body response collection createdAt updatedAt")
+    .sort({ updatedAt: -1 })
+    .limit(limit)
+    .lean();
   res.json(requests);
 };
 
@@ -146,44 +128,34 @@ export const deleteRequest = async (req: Request, res: Response) => {
 
 /* ----------------------------- Temporary Execution ----------------------------- */
 export const executeTemp = async (req: Request, res: Response) => {
-  const { url, method = "GET", headers = {}, body } = req.body;
-
-  if (!url) {
-    return res.status(400).json({ message: "URL is required" });
-  }
-
   try {
-    const userId = (req as any).userId;
-    console.log("EXEC TEMP userId =", (req as any).userId);
-
-    /* ───────────── Validate request ───────────── */
     const { url, method = "GET", headers = {}, body } = req.body;
 
     if (!url || !/^https?:\/\//i.test(url)) {
       return res.status(400).json({ error: "Invalid URL" });
     }
 
+    const urlCheck = await validateSafeHttpUrl(url);
+    if (!urlCheck.ok) {
+      return res.status(400).json({ error: `Blocked URL: ${urlCheck.reason}` });
+    }
+
     const upperMethod = method.toUpperCase();
 
-    /* ───────────── Execute request ───────────── */
-    const response = await axios({
-      method: upperMethod.toLowerCase() as any,
+    const response = await executeRequest(
+      upperMethod as any,
       url,
-      headers: {
-        // 🔥 REQUIRED for Google / Bing / Cloudflare
+      {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "*/*",
+        Accept: "*/*",
         "Accept-Language": "en-US,en;q=0.9",
-        ...headers, // user headers override defaults
+        ...headers,
       },
-      validateStatus: () => true,
-      timeout: 15000,
-      ...(upperMethod !== "GET" && body ? { data: body } : {}),
-    });
+      upperMethod !== "GET" ? body : undefined
+    );
 
-    /* ───────────── Normalize response ───────────── */
-    const contentType = response.headers["content-type"] || "";
+    const contentType = ((response.headers as Record<string, unknown>)["content-type"] as string) || "";
     let responseData = response.data;
 
     if (typeof responseData === "string" && contentType.includes("text/html")) {
@@ -237,4 +209,3 @@ export const updateRequest = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-

@@ -16,4 +16,6 @@ const CollectionSchema = new Schema<ICollection>(
   { timestamps: true }
 );
 
+CollectionSchema.index({ user: 1, createdAt: -1 });
+
 export default mongoose.model<ICollection>("Collection", CollectionSchema);

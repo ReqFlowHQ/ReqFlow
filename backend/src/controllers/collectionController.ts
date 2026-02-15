@@ -10,8 +10,11 @@ export const createCollection = async (req: Request, res: Response) => {
 };
 
 export const getCollections = async (req: Request, res: Response) => {
-  const userId = (req as any).userId;
-  const collections = await Collection.find({ user: userId });
+  const userId = req.userId;
+  const collections = await Collection.find({ user: userId })
+    .select("_id name description createdAt updatedAt")
+    .sort({ createdAt: -1 })
+    .lean();
   res.json(collections);
 };
 

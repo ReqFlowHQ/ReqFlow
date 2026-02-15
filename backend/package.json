@@ -5,7 +5,12 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.cjs",
+    "test:coverage": "npm run build && node --test --experimental-test-coverage tests/*.test.cjs",
+    "test:security": "npm run test"
   },
   "dependencies": {
     "axios": "^1.6.0",

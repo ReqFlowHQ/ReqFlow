@@ -32,11 +32,11 @@ export default function Topbar() {
       <div
         className="
           flex items-center justify-between
-          px-4 py-2
-          border-b border-gray-300
-          bg-gray-100/80 backdrop-blur-md
-          dark:bg-gray-900/70 dark:border-gray-700
-          shadow-sm
+          px-4 py-2.5
+          border-b border-slate-200/80
+          bg-white/70 backdrop-blur-xl
+          dark:bg-slate-900/55 dark:border-slate-700/70
+          shadow-[0_8px_24px_rgba(15,23,42,0.08)] dark:shadow-[0_10px_28px_rgba(2,6,23,0.35)]
         "
       >
         {/* Left */}
@@ -45,9 +45,9 @@ export default function Topbar() {
             onClick={() => window.dispatchEvent(new Event("toggle-sidebar"))}
             className="
               md:hidden p-2 rounded-md
-              bg-gray-200 hover:bg-gray-300
-              dark:bg-gray-800 dark:hover:bg-gray-700
-              transition
+              bg-slate-200/80 hover:bg-slate-300/80
+              dark:bg-slate-800/80 dark:hover:bg-slate-700
+              transition shadow-sm
             "
             aria-label="Open menu"
           >
@@ -57,7 +57,7 @@ export default function Topbar() {
           <h1
             className="
               text-xl sm:text-2xl font-bold tracking-wide
-              bg-gradient-to-r from-indigo-500 via-purple-500 to-teal-400
+              bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500
               bg-clip-text text-transparent
             "
           >
@@ -77,8 +77,8 @@ export default function Topbar() {
             <span
               className="
                 hidden sm:flex items-center gap-2 px-2 py-1 rounded-md
-                bg-blue-500/10 border border-blue-400/30
-                text-xs text-blue-600 dark:text-blue-300
+                bg-sky-500/10 border border-sky-400/30
+                text-xs text-sky-700 dark:text-sky-300
               "
             >
               <FaUserSecret />
@@ -91,9 +91,9 @@ export default function Topbar() {
             onClick={toggleTheme}
             className="
               p-2 rounded-md
-              bg-gray-200 hover:bg-gray-300
-              dark:bg-gray-800 dark:hover:bg-gray-700
-              transition
+              bg-slate-200/80 hover:bg-slate-300/80
+              dark:bg-slate-800 dark:hover:bg-slate-700
+              transition shadow-sm
             "
             title={theme === "dark" ? "Light mode" : "Dark mode"}
           >
@@ -109,8 +109,8 @@ export default function Topbar() {
             <button
               onClick={() => setShowModal(true)}
               className="
-                flex items-center gap-2 px-3 py-2 rounded-md
-                bg-red-500 hover:bg-red-600
+                flex items-center gap-2 px-3 py-2 rounded-md shadow-sm
+                bg-rose-500 hover:bg-rose-600
                 text-white text-sm font-medium
                 transition
               "
@@ -137,12 +137,11 @@ export default function Topbar() {
               className="
                 relative w-full max-w-sm mx-4
                 rounded-2xl
-                bg-white/10 dark:bg-gray-900/30
-                border border-white/20
+                bg-white/75 dark:bg-slate-900/75
+                border border-white/60 dark:border-slate-700/70
                 backdrop-blur-2xl
-                shadow-2xl
-                p-6 text-center
-                text-gray-900 dark:text-white
+                shadow-2xl p-6 text-center
+                text-slate-900 dark:text-white
               "
             >
               {/* Glow */}
@@ -170,8 +169,8 @@ export default function Topbar() {
                   onClick={() => setShowModal(false)}
                   className="
                     px-4 py-2 rounded-md
-                    bg-gray-300 hover:bg-gray-400
-                    dark:bg-gray-700 dark:hover:bg-gray-600
+                    bg-slate-200 hover:bg-slate-300
+                    dark:bg-slate-700 dark:hover:bg-slate-600
                     text-sm transition
                   "
                 >

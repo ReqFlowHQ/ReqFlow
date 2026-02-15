@@ -30,4 +30,7 @@ const RequestSchema = new Schema<IRequest>(
   { timestamps: true }
 );
 
+RequestSchema.index({ user: 1, collection: 1, updatedAt: -1 });
+RequestSchema.index({ user: 1, updatedAt: -1 });
+
 export default model<IRequest>("Request", RequestSchema);

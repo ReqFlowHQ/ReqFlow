@@ -4,6 +4,8 @@ import { Helmet } from "react-helmet-async";
 import api from "../api/axios";
 import { useRequests } from "../hooks/useRequests";
 import SafeLink from "../components/SafeLink";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
 
 export default function Login() {
   const handleGoogleLogin = () => {
@@ -43,29 +45,20 @@ export default function Login() {
         />
       </Helmet>
 
-      {/* 🌈 BACKGROUND */}
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 px-6">
-        {/* 🧱 CONTENT */}
-        <div
-          className="
-    w-full max-w-6xl
-    grid grid-cols-1
-    md:grid-cols-[1.2fr_0.8fr]
-    items-center
-    gap-12 lg:gap-16
-  "
-        >
+      <div className="relative min-h-screen overflow-hidden bg-[#0b1220] px-4 py-8 sm:px-6 md:flex md:items-center md:justify-center md:py-12">
+        <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-cyan-400/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-28 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-fuchsia-500/25 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-indigo-500/30 blur-3xl" />
 
-
-          {/* LEFT PANEL */}
+        <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-8 md:grid-cols-[1.1fr_0.9fr] md:gap-12">
           <motion.div
-            className="md:w-[480px] flex flex-col items-center md:items-start text-center md:text-left space-y-5"
+            className="order-1 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl md:order-1 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6 }}
           >
             <motion.h1
-              className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white"
+              className="text-center text-3xl font-extrabold tracking-wide text-white sm:text-4xl md:text-left md:text-6xl"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
@@ -74,89 +67,75 @@ export default function Login() {
             </motion.h1>
 
             <motion.p
-              className="text-white/85 text-sm sm:text-base md:text-lg leading-relaxed"
+              className="mt-3 text-center text-sm leading-relaxed text-white/80 sm:text-base md:mt-5 md:max-w-xl md:text-left md:text-lg"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.15, duration: 0.5 }}
             >
-              ReqFlow is a sleek and modern alternative to Postman. Designed for developers
-              and teams to send, test, and manage HTTP requests effortlessly.
+              Fast API testing with cleaner workflows, sharable collections, and execution history that feels instant on every device.
             </motion.p>
 
-            <motion.ul
-              className="hidden md:block text-white/70 text-base list-disc list-inside space-y-2"
+            <motion.div
+              className="mt-4 flex flex-wrap justify-center gap-2 md:mt-6 md:justify-start"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.25, duration: 0.5 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <li>Send GET, POST, PUT, PATCH, DELETE requests</li>
-              <li>Instantly view formatted JSON responses</li>
-              <li>Supports OAuth, API keys, custom headers</li>
-            </motion.ul>
+              <span className="rounded-full border border-cyan-300/40 bg-cyan-300/15 px-3 py-1 text-xs font-medium text-cyan-100">Fast Proxy</span>
+              <span className="rounded-full border border-emerald-300/40 bg-emerald-300/15 px-3 py-1 text-xs font-medium text-emerald-100">Saved Requests</span>
+              <span className="rounded-full border border-indigo-300/40 bg-indigo-300/15 px-3 py-1 text-xs font-medium text-indigo-100">Team Ready</span>
+            </motion.div>
           </motion.div>
 
-          {/* RIGHT PANEL — LOGIN CARD */}
           <motion.div
-            className="w-full max-w-md p-6 sm:p-7 md:p-10 rounded-2xl bg-white/10 border border-white/20 shadow-2xl backdrop-blur-2xl relative"
+            className="order-2 w-full rounded-3xl border border-white/20 bg-white/10 p-5 shadow-[0_30px_80px_rgba(2,6,23,0.55)] backdrop-blur-2xl sm:p-7 md:order-2 md:p-10"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            {/* ✅ LOGIN CONTENT — MUST LIVE INSIDE THIS DIV */}
-
-            <h2 className="text-3xl font-bold text-white mb-6 text-center md:text-left">
+            <h2 className="text-center text-2xl font-bold text-white sm:text-3xl md:text-left">
               Sign in
             </h2>
-
-            <p className="text-white/70 mb-6 text-center md:text-left">
-              Choose your preferred login method
+            <p className="mt-2 text-center text-sm text-white/70 md:text-left">
+              Continue with your account or try guest mode
             </p>
 
-            <div className="flex flex-col gap-4">
-              {/* Google */}
+            <div className="mt-6 flex flex-col gap-3">
               <button
                 onClick={handleGoogleLogin}
-                className="flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold py-3 px-4 rounded-lg shadow-md active:scale-[0.98] transition-transform duration-150"
+                className="group relative overflow-hidden flex items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 font-semibold text-gray-800 shadow-[0_10px_24px_rgba(15,23,42,0.22)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(15,23,42,0.28)] active:translate-y-0 active:scale-[0.985]"
               >
-                <img
-                  src="https://www.svgrepo.com/show/475656/google-color.svg"
-                  alt="Google"
-                  className="w-5 h-5"
-                />
+                <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-slate-100/70 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <FcGoogle className="h-5 w-5" />
                 Continue with Google
               </button>
 
-              {/* GitHub */}
               <button
                 onClick={handleGitHubLogin}
-                className="flex items-center justify-center gap-3 bg-gray-900 text-white font-semibold py-3 px-4 rounded-lg shadow-md active:scale-[0.98] transition-transform duration-150"
+                className="group relative overflow-hidden flex items-center justify-center gap-3 rounded-xl bg-gray-900 px-4 py-3 font-semibold text-white shadow-[0_10px_24px_rgba(2,6,23,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(2,6,23,0.65)] hover:bg-black active:translate-y-0 active:scale-[0.985]"
               >
-                <img
-                  src="https://www.svgrepo.com/show/512317/github-142.svg"
-                  alt="GitHub"
-                  className="w-5 h-5 invert"
-                />
+                <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <FaGithub className="h-5 w-5" />
                 Continue with GitHub
               </button>
 
-              {/* Divider */}
-              <div className="flex items-center gap-3 my-2">
-                <div className="flex-1 h-px bg-white/20" />
-                <span className="text-xs text-white/60">or</span>
-                <div className="flex-1 h-px bg-white/20" />
+              <div className="my-1 flex items-center gap-3">
+                <div className="h-px flex-1 bg-white/20" />
+                <span className="text-xs uppercase tracking-wider text-white/60">or</span>
+                <div className="h-px flex-1 bg-white/20" />
               </div>
 
-              {/* Guest */}
               <button
                 onClick={enterGuest}
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg border border-white/30 text-white/90 text-sm hover:bg-white/10 active:scale-[0.98] transition"
+                className="group relative overflow-hidden flex items-center justify-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-3 text-sm text-white/90 shadow-[0_8px_20px_rgba(2,6,23,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/60 hover:bg-white/18 hover:shadow-[0_16px_34px_rgba(2,6,23,0.38)] active:translate-y-0 active:scale-[0.985]"
               >
+                <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-cyan-200/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 Continue as Guest
-                <span className="text-xs opacity-60">(5 GET/day)</span>
+                <span className="text-xs opacity-70">(5 GET/day)</span>
               </button>
             </div>
 
-            <p className="text-white/70 text-xs mt-6 text-center md:text-left">
+            <p className="mt-6 text-center text-xs text-white/70 md:text-left">
               By logging in, you agree to ReqFlow’s{" "}
               <SafeLink to="/terms" className="underline hover:text-white">
                 Terms
@@ -167,15 +146,11 @@ export default function Login() {
               </SafeLink>
             </p>
 
-            <p className="text-white/50 text-xs mt-2 text-center md:text-left">
-
+            <p className="mt-2 text-center text-xs text-white/50 md:text-left">
               <SafeLink to="/about" className="underline hover:text-white">
                 About ReqFlow
               </SafeLink>
             </p>
-
-            {/* Glow */}
-            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 opacity-10 blur-2xl pointer-events-none" />
           </motion.div>
         </div>
       </div>
