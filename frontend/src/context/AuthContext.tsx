@@ -12,8 +12,11 @@ import {
 } from "../utils/workspaceSession";
 import { restoreTabsIntoCollections } from "../utils/tabPersistence";
 
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+
 interface AuthContextType {
   user: any | null;
+  status: AuthStatus;
   loading: boolean;
   hydrated: boolean;
   isGuest: boolean;
@@ -25,9 +28,8 @@ const AuthContext = createContext<AuthContextType>(null as any);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<AuthStatus>("loading");
   const [isGuest, setIsGuest] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const {
     hasHydratedStorage,
@@ -47,40 +49,51 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const getUserId = (candidate: any): string | null =>
     candidate?._id || candidate?.id || null;
 
+  const loading = status === "loading";
+  const hydrated = !loading;
+
   // 🔥 AUTH HYDRATION (single source of truth)
   useEffect(() => {
-    api
-      .get("/auth/me", { withCredentials: true })
-      .then((res) => {
-  const user = res.data.user;
+    let cancelled = false;
 
-  if (user) {
-    // real logged-in user
-    setUser(user);
-    setIsGuest(false);
-    localStorage.removeItem("guest");
-    localStorage.removeItem("guest-get-count");
-  } else {
-    // unauthenticated but valid response
-    setUser(null);
-    setIsGuest(localStorage.getItem("guest") === "true");
-  }
-})
+    const hydrateAuth = async () => {
+      setStatus("loading");
 
-      .catch((err) => {
-  if (err?.response?.status !== 401) {
-    console.error("Auth hydration failed:", err);
-  }
+      try {
+        const res = await api.get("/auth/me", { withCredentials: true });
+        if (cancelled) return;
 
-  // 401 = not logged in → normal state
-  setUser(null);
-  setIsGuest(localStorage.getItem("guest") === "true");
-})
+        const currentUser = res.data?.user || null;
+        if (currentUser) {
+          setUser(currentUser);
+          setIsGuest(false);
+          localStorage.removeItem("guest");
+          localStorage.removeItem("guest-get-count");
+          setStatus("authenticated");
+          return;
+        }
 
-      .finally(() => {
-        setLoading(false);
-        setHydrated(true); // 🔥 THIS IS THE KEY
-      });
+        const guestMode = localStorage.getItem("guest") === "true";
+        setUser(null);
+        setIsGuest(guestMode);
+        setStatus(guestMode ? "authenticated" : "unauthenticated");
+      } catch (err: any) {
+        if (cancelled) return;
+        if (err?.response?.status !== 401) {
+          console.error("Auth hydration failed:", err);
+        }
+        const guestMode = localStorage.getItem("guest") === "true";
+        setUser(null);
+        setIsGuest(guestMode);
+        setStatus(guestMode ? "authenticated" : "unauthenticated");
+      }
+    };
+
+    void hydrateAuth();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -242,30 +255,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [loading, user]);
 
   const logout = async () => {
-    setIsLoggingOut(true);        // 🔥 KEY LINE
+    setIsLoggingOut(true);
+    try {
+      const wasGuest = isGuest;
 
-    const wasGuest = isGuest;
+      setUser(null);
+      setIsGuest(false);
+      setStatus("unauthenticated");
 
-    setUser(null);
-    setIsGuest(false);
+      localStorage.removeItem("guest");
+      localStorage.removeItem("guest-get-count");
+      localStorage.removeItem("reqflow-session");
+      const userId = getUserId(user);
+      if (userId) {
+        clearWorkspaceSession(userId);
+      }
+      useRequests.getState().hardReset();
 
-    localStorage.removeItem("guest");
-    localStorage.removeItem("guest-get-count");
-    localStorage.removeItem("reqflow-session");
-    const userId = getUserId(user);
-    if (userId) {
-      clearWorkspaceSession(userId);
-    }
-    useRequests.getState().hardReset();
-
-    if (!wasGuest) {
-      await api.post("/auth/logout").catch(() => { });
+      if (!wasGuest) {
+        await api.post("/auth/logout").catch(() => { });
+      }
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
 
   return (
-    <AuthContext.Provider value={{ user, loading, hydrated, isGuest, isLoggingOut,logout }}>
+    <AuthContext.Provider
+      value={{ user, status, loading, hydrated, isGuest, isLoggingOut, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

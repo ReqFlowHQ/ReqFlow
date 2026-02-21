@@ -6,7 +6,6 @@ import { FaMoon, FaSun, FaSignOutAlt, FaUserSecret, FaTimes } from "react-icons/
 import { createPortal } from "react-dom";
 import { FiMenu } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { startTransition } from "react";
 
 export default function Topbar() {
   const navigate = useNavigate();
@@ -14,13 +13,10 @@ export default function Topbar() {
   const { user, isGuest, logout } = useAuth();
   const [showModal, setShowModal] = useState(false);
 
-  const confirmLogout = async () => {
+  const confirmLogout = () => {
     setShowModal(false);
-    await logout();
-
-    startTransition(() => {
-      navigate("/", { replace: true });
-    });
+    navigate("/", { replace: true });
+    void logout();
   };
 
 
@@ -171,7 +167,7 @@ export default function Topbar() {
                 className="relative text-sm text-gray-700 dark:text-gray-300 mb-6"
               >
                 {isGuest
-                  ? "Exit guest mode and return to login?"
+                  ? "Exit guest mode and return to home page?"
                   : "Are you sure you want to log out from ReqFlow?"}
               </p>
 

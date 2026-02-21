@@ -12,6 +12,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const OAuthCallback = lazy(() => import("./pages/OAuthCallback"));
 const About = lazy(() => import("./pages/About"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -59,6 +60,14 @@ export default function App() {
             <Route
               path="/verify"
               element={MAINTENANCE ? <Maintenance /> : <VerifyEmail />}
+            />
+            <Route
+              path="/oauth/callback"
+              element={MAINTENANCE ? <Maintenance /> : <OAuthCallback />}
+            />
+            <Route
+              path="/auth/callback"
+              element={MAINTENANCE ? <Maintenance /> : <OAuthCallback />}
             />
 
             <Route

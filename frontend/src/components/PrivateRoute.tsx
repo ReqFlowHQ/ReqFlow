@@ -2,15 +2,13 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function PrivateRoute({ element }: { element: JSX.Element }) {
-  const { user, isGuest, hydrated, isLoggingOut } = useAuth();
+  const { status, isGuest, isLoggingOut } = useAuth();
 
-  // ⛔ Block routing during logout
-  if (!hydrated || isLoggingOut) return null;
+  if (status === "loading" || isLoggingOut) return null;
 
-  if (user || isGuest) {
-    return element;
+  if (status === "unauthenticated" && !isGuest) {
+    return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to="/login" replace />;
+  return element;
 }
-

@@ -1,13 +1,26 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
+import { Navigate } from "react-router-dom";
 import api from "../api/axios";
 import { useRequests } from "../hooks/useRequests";
 import SafeLink from "../components/SafeLink";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
+import AppLoader from "../components/AppLoader";
 
 export default function Login() {
+  const { status, user, isGuest } = useAuth();
+
+  if (status === "loading") {
+    return <AppLoader />;
+  }
+
+  if (status === "authenticated" && (user || isGuest)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const handleGoogleLogin = () => {
     window.location.href = "/api/auth/google";
   };
