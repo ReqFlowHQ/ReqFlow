@@ -120,8 +120,16 @@ router.get("/me", attachUser, async (req, res) => {
   return res.json({ user });
 });
 
-router.get("/csrf", (_req, res) => {
-  return res.status(204).send();
+router.get("/csrf", (req, res) => {
+  const csrfToken = req.cookies?.csrfToken;
+  return res.status(200).json({ csrfToken });
+});
+
+router.get("/verify-email", (_req, res) => {
+  return res.status(410).json({
+    error: "Email verification flow is deprecated",
+    message: "ReqFlow uses OAuth sign-in. Please continue with Google or GitHub.",
+  });
 });
 
 router.post("/refresh", async (req, res) => {

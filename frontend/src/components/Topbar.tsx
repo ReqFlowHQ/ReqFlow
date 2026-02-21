@@ -2,7 +2,7 @@
 import { useContext, useState } from "react";
 import { ThemeContext } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
-import { FaMoon, FaSun, FaSignOutAlt, FaUserSecret } from "react-icons/fa";
+import { FaMoon, FaSun, FaSignOutAlt, FaUserSecret, FaTimes } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import { FiMenu } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
@@ -130,35 +130,46 @@ export default function Topbar() {
             className="
               fixed inset-0 z-[9999]
               flex items-center justify-center
-              bg-black/40 backdrop-blur-sm
+              bg-black/25 backdrop-blur-sm
             "
           >
             <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="logout-modal-title"
+              aria-describedby="logout-modal-description"
               className="
-                relative w-full max-w-sm mx-4
+                relative w-full max-w-sm mx-4 overflow-hidden
                 rounded-2xl
-                bg-white/75 dark:bg-slate-900/75
-                border border-white/60 dark:border-slate-700/70
-                backdrop-blur-2xl
-                shadow-2xl p-6 text-center
+                bg-white/22 dark:bg-slate-900/28
+                border border-white/40 dark:border-slate-500/40
+                backdrop-blur-3xl
+                shadow-2xl shadow-slate-900/20 p-6 text-center
                 text-slate-900 dark:text-white
               "
             >
-              {/* Glow */}
-              <div
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/35 via-white/10 to-transparent dark:from-white/10 dark:via-white/5 dark:to-transparent" />
+              <button
+                onClick={() => setShowModal(false)}
+                aria-label="Close dialog"
                 className="
-                  absolute -inset-1 rounded-2xl
-                  bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400
-                  opacity-20 blur-2xl
-                  pointer-events-none
+                  absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center
+                  rounded-full text-slate-500 transition-colors
+                  hover:bg-white/40 hover:text-slate-800
+                  dark:text-slate-300 dark:hover:bg-white/15 dark:hover:text-white
                 "
-              />
+              >
+                <FaTimes size={11} className="pointer-events-none" />
+              </button>
 
-              <h2 className="relative text-lg font-semibold mb-2">
+              <h2 id="logout-modal-title" className="relative text-lg font-semibold mb-2">
                 Confirm Logout
               </h2>
 
-              <p className="relative text-sm text-gray-700 dark:text-gray-300 mb-6">
+              <p
+                id="logout-modal-description"
+                className="relative text-sm text-gray-700 dark:text-gray-300 mb-6"
+              >
                 {isGuest
                   ? "Exit guest mode and return to login?"
                   : "Are you sure you want to log out from ReqFlow?"}
@@ -169,8 +180,8 @@ export default function Topbar() {
                   onClick={() => setShowModal(false)}
                   className="
                     px-4 py-2 rounded-md
-                    bg-slate-200 hover:bg-slate-300
-                    dark:bg-slate-700 dark:hover:bg-slate-600
+                    border border-white/45 bg-white/30 hover:bg-white/45
+                    dark:border-slate-400/50 dark:bg-white/10 dark:hover:bg-white/15
                     text-sm transition
                   "
                 >

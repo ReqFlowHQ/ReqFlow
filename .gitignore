@@ -33,4 +33,5 @@ Thumbs.db
 
 # misc
 coverage/
-
+playwright-report/
+test-results/

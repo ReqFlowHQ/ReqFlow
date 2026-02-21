@@ -1,0 +1,16 @@
+export const safeJsonParse = <T>(value: string | null | undefined, fallback: T): T => {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+export const safeJsonStringify = (value: unknown, fallback: string): string => {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return fallback;
+  }
+};

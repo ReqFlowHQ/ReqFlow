@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getCookieValue, shouldAttachCsrf } from "../.test-dist/securityHeaders.js";
+import { getCookieValue, shouldAttachCsrf } from "../.test-dist/api/securityHeaders.js";
 
 test("getCookieValue returns matching cookie value", () => {
   const raw = "theme=dark; csrfToken=abc123; mode=dev";

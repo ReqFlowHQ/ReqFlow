@@ -6,6 +6,8 @@ export interface IRequest {
   name: string;
   method: string;
   url: string;
+  params?: Record<string, string | number | boolean | null | undefined>;
+  auth?: Record<string, unknown>;
   headers?: Record<string, string | number | boolean | null | undefined>;
   body?: any;
   response?: {
@@ -23,6 +25,8 @@ const RequestSchema = new Schema<IRequest>(
     name: { type: String, required: true },
     method: { type: String, required: true },
     url: { type: String, required: true },
+    params: { type: Schema.Types.Mixed, default: {} },
+    auth: { type: Schema.Types.Mixed, default: { type: "none" } },
     headers: { type: Schema.Types.Mixed, default: {} },
     body: { type: Schema.Types.Mixed },
     response: { type: Schema.Types.Mixed },

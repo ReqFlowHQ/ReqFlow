@@ -9,6 +9,9 @@ export default function Privacy() {
           name="description"
           content="Read the Privacy Policy for ReqFlow, a modern API workflow tool built by OpenGraph Labs. Learn how user data is handled and protected."
         />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://reqflow.onlineappsandservices.online/privacy" />
+        <meta property="og:url" content="https://reqflow.onlineappsandservices.online/privacy" />
       </Helmet>
 	<div className="min-h-screen bg-gray-900">
         <div className="max-w-4xl mx-auto px-6 py-16 text-gray-300 leading-relaxed">

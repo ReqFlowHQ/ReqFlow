@@ -44,6 +44,8 @@ const shouldProtect = (req: Request): boolean => {
 export const ensureCsrfCookie = (req: Request, res: Response, next: NextFunction) => {
   if (!req.cookies?.[CSRF_COOKIE_NAME]) {
     const token = crypto.randomBytes(32).toString("hex");
+    req.cookies = req.cookies || {};
+    req.cookies[CSRF_COOKIE_NAME] = token;
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: false,
       secure: isProd,

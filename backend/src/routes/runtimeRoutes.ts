@@ -2,7 +2,7 @@ import { Router } from "express";
 import { executeRuntime } from "../controllers/runtimeController";
 import { protect } from "../middleware/auth";
 import { guestGuard } from "../middleware/guest";
-import { protectOptional } from "../middleware/protectOptional";
+import { validateRuntimeExecutionPayload } from "../middleware/validateExecutionRequest";
 const router = Router();
 
 /**
@@ -12,7 +12,7 @@ const router = Router();
  */
 router.post(
   "/execute",
-  protectOptional,   // detect auth but don’t block
+  validateRuntimeExecutionPayload,
   guestGuard,        // enforce guest rules ONLY if not logged in
   executeRuntime
 );
@@ -28,4 +28,3 @@ router.post(
 );
 
 export default router;
-

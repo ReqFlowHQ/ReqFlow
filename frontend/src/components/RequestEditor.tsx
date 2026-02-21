@@ -3,11 +3,17 @@ import React from "react";
 import { useRequests } from "../hooks/useRequests";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
-import { FaPaperPlane, FaTrash, FaSave } from "react-icons/fa";
+import { FaPaperPlane, FaTrash, FaSave, FaLock, FaChevronDown } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import RequestContentTabs from "./RequestContentTabs";
+import EnvironmentManager from "./EnvironmentManager";
 import api from "../api/axios";
 import { shallow } from "zustand/shallow";
+import ModifiedRequestModal from "./ModifiedRequestModal";
+import {
+  resolveSendFlowAction,
+  runModifiedRequestChoice,
+} from "../utils/sendRequestFlow";
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
 export default function RequestEditor() {
@@ -20,6 +26,9 @@ export default function RequestEditor() {
 
   const [resetAt, setResetAt] = React.useState<string | null>(null);
   const [countdown, setCountdown] = React.useState<string>("");
+  const [showModifiedModal, setShowModifiedModal] = React.useState(false);
+  const [methodMenuOpen, setMethodMenuOpen] = React.useState(false);
+  const methodMenuRef = React.useRef<HTMLDivElement | null>(null);
 
   const {
     activeRequest,
@@ -29,6 +38,8 @@ export default function RequestEditor() {
     deleteRequest,
     saveRequest,
     executeRequest,
+    executeUnsavedActiveRequest,
+    isActiveSavedRequestModified,
     guestRemaining,
   } = useRequests(
     (state) => ({
@@ -39,6 +50,8 @@ export default function RequestEditor() {
       deleteRequest: state.deleteRequest,
       saveRequest: state.saveRequest,
       executeRequest: state.executeRequest,
+      executeUnsavedActiveRequest: state.executeUnsavedActiveRequest,
+      isActiveSavedRequestModified: state.isActiveSavedRequestModified,
       guestRemaining: state.guestRemaining,
     }),
     shallow
@@ -89,6 +102,27 @@ export default function RequestEditor() {
     return () => clearInterval(interval);
   }, [resetAt]);
 
+  React.useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      if (!methodMenuRef.current) return;
+      if (!methodMenuRef.current.contains(event.target as Node)) {
+        setMethodMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMethodMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
 
 
   /* -------------------- GUARDS -------------------- */
@@ -101,6 +135,12 @@ export default function RequestEditor() {
   }
 
   const requestId = activeRequest._id || "";
+  const editorRootClassName = isMobile
+    ? "block w-full max-w-full overflow-x-hidden overflow-y-visible"
+    : "flex flex-col h-full overflow-x-hidden";
+  const editorBodyClassName = isMobile
+    ? "w-full max-w-full p-3 overflow-visible"
+    : "flex-1 overflow-auto p-3";
 
   const guestLimitReached =
     isGuest && guestRemaining !== null && guestRemaining <= 0;
@@ -125,10 +165,57 @@ export default function RequestEditor() {
 
   /* -------------------- ACTIONS -------------------- */
   const handleSend = async () => {
+    const sendAction = resolveSendFlowAction({
+      isSavedRequest: !activeRequest.isTemporary,
+      isModified: isActiveSavedRequestModified(),
+    });
+    if (sendAction === "prompt") {
+      setShowModifiedModal(true);
+      return;
+    }
+
     try {
       await executeRequest(requestId);
       scrollToResponseMobile();
 
+      toast.success("Request executed successfully 🚀");
+    } catch (err: any) {
+      scrollToResponseMobile();
+      toast.error(err.message || "Request failed ❌");
+    }
+  };
+
+  const handleSaveAndRun = async () => {
+    setShowModifiedModal(false);
+    try {
+      await runModifiedRequestChoice({
+        choice: "save-and-run",
+        saveAndRun: async () => {
+          await saveRequest(requestId);
+          await executeRequest(requestId);
+        },
+        runWithoutSaving: executeUnsavedActiveRequest,
+      });
+      scrollToResponseMobile();
+      toast.success("Request executed successfully 🚀");
+    } catch (err: any) {
+      scrollToResponseMobile();
+      toast.error(err.message || "Request failed ❌");
+    }
+  };
+
+  const handleRunWithoutSaving = async () => {
+    setShowModifiedModal(false);
+    try {
+      await runModifiedRequestChoice({
+        choice: "run-without-saving",
+        saveAndRun: async () => {
+          await saveRequest(requestId);
+          await executeRequest(requestId);
+        },
+        runWithoutSaving: executeUnsavedActiveRequest,
+      });
+      scrollToResponseMobile();
       toast.success("Request executed successfully 🚀");
     } catch (err: any) {
       scrollToResponseMobile();
@@ -170,13 +257,13 @@ export default function RequestEditor() {
 
   /* -------------------- UI -------------------- */
   return (
-    <div className="flex flex-col h-full overflow-x-hidden">
+    <div className={editorRootClassName}>
 
 
 
       {/* Top bar */}
       {/* Top bar */}
-      <div className="p-3 border-b border-slate-200/70 bg-white/55 dark:bg-slate-900/55 dark:border-slate-700/70 backdrop-blur-xl">
+      <div className="relative z-30 overflow-visible p-3 border-b border-slate-200/70 bg-white/55 dark:bg-slate-900/55 dark:border-slate-700/70 backdrop-blur-xl">
         <div className="flex w-full flex-col gap-2">
 
           {isGuest && (
@@ -194,29 +281,96 @@ export default function RequestEditor() {
           )}
 
 
-          <div className="flex w-full min-w-0 flex-col gap-2">
-            <div className="flex w-full min-w-0 flex-col gap-2 lg:flex-row lg:items-center">
+          <div className="flex w-full min-w-0 flex-col gap-2 overflow-visible">
+            <div className="grid w-full min-w-0 grid-cols-1 gap-2 overflow-visible lg:grid-cols-[176px_minmax(0,1.6fr)_minmax(0,1fr)] lg:items-stretch">
             {/* Method selector */}
-            <select
-              value={activeRequest.method}
-              onChange={(e) => {
-                const selected = e.target.value;
-                if (isMethodLocked(selected)) return;
-                updateRequest(requestId, { method: selected });
-              }}
-              className="w-full lg:w-[108px] lg:shrink-0 bg-white text-gray-900 border border-gray-300
-              dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
-              px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
-            >
-              {METHODS.map((m) => (
-                <option key={m} value={m} disabled={isMethodLocked(m)}>
-                  {m} {isMethodLocked(m) ? "🔒" : ""}
-                </option>
-              ))}
-            </select>
+            <div className="relative z-40 w-[176px] min-w-[176px] max-w-[176px] shrink-0 overflow-visible" ref={methodMenuRef}>
+              <div
+                className="
+                  relative flex h-11 w-full items-center rounded-lg border border-cyan-300 dark:border-slate-600
+                  bg-white dark:bg-slate-800 px-3 box-border
+                  shadow-[0_4px_12px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_12px_rgba(2,6,23,0.35)]
+                "
+              >
+                <span className="hidden lg:inline shrink-0 pr-2 text-[10px] font-semibold tracking-wide text-slate-500 dark:text-slate-400">
+                  METHOD
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMethodMenuOpen((open) => !open)}
+                  className="
+                    inline-flex h-full w-full min-w-0 items-center justify-between gap-2
+                    bg-transparent px-0 box-border
+                    text-sm leading-5 font-bold tracking-wide text-slate-900 dark:text-slate-100
+                    transition-colors
+                    focus:outline-none focus:ring-2 focus:ring-cyan-500/45
+                  "
+                  aria-haspopup="listbox"
+                  aria-expanded={methodMenuOpen}
+                  aria-label="Select HTTP method"
+                >
+                  <span className="flex-1 whitespace-nowrap text-left">{activeRequest.method}</span>
+                  <FaChevronDown
+                    size={10}
+                    className={`shrink-0 text-slate-500 transition-transform duration-200 ease-out dark:text-slate-300 ${
+                      methodMenuOpen ? "rotate-180" : "rotate-0"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                <div
+                  className={`absolute left-0 top-[calc(100%+6px)] z-[80] w-full max-h-64 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 shadow-[0_10px_24px_rgba(15,23,42,0.18)] dark:shadow-[0_12px_28px_rgba(2,6,23,0.55)] transition-all duration-150 ease-out ${
+                    methodMenuOpen
+                      ? "pointer-events-auto translate-y-0 opacity-100"
+                      : "pointer-events-none -translate-y-1 opacity-0"
+                  }`}
+                  role="listbox"
+                  aria-label="HTTP method options"
+                >
+                  {METHODS.map((method) => {
+                    const locked = isMethodLocked(method);
+                    const isSelected = activeRequest.method === method;
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        disabled={locked}
+                        onClick={() => {
+                          if (locked) return;
+                          updateRequest(requestId, { method });
+                          setMethodMenuOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors border-b border-slate-100 dark:border-slate-700 last:border-b-0 first:rounded-t-lg last:rounded-b-lg ${
+                          isSelected
+                            ? "bg-cyan-50 text-slate-900 dark:bg-cyan-500/15 dark:text-white"
+                            : locked
+                              ? "cursor-not-allowed bg-slate-50 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+                              : "bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                        }`}
+                        role="option"
+                        aria-selected={isSelected}
+                      >
+                        <span className="font-medium">{method}</span>
+                        {locked ? <FaLock size={10} className="opacity-80" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+                {isGuest && activeRequest.method !== "GET" && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-md bg-slate-200/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700/70 dark:text-slate-300"
+                    title="Guest mode allows only GET"
+                  >
+                    <FaLock size={9} />
+                    Locked
+                  </span>
+                )}
+              </div>
+            </div>
 
             {/* URL */}
-            <div className="w-full min-w-0 flex-1 lg:min-w-[220px]">
+            <div className="w-full min-w-0">
               <input
                 value={activeRequest.url || ""}
                 onChange={(e) =>
@@ -224,14 +378,15 @@ export default function RequestEditor() {
                 }
                 placeholder="Enter request URL..."
                 className="w-full min-w-0 px-3 py-2 rounded-lg
-              bg-white/95 text-gray-900 border border-slate-300 shadow-sm
+              h-11 box-border bg-white/95 text-gray-900 border border-slate-300 shadow-sm
+              text-sm leading-5
               dark:bg-slate-800/90 dark:text-gray-100 dark:border-slate-600
               focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
               />
             </div>
 
             {/* Name */}
-            <div className="w-full min-w-0 flex-1 lg:min-w-[220px]">
+            <div className="w-full min-w-0">
               <input
                 value={activeRequest.name || ""}
                 onChange={(e) =>
@@ -289,14 +444,23 @@ export default function RequestEditor() {
         </div>
       </div>
       {/* Body / Headers */}
-      <div className="flex-1 overflow-auto p-3">
+      <div className={editorBodyClassName}>
+        <EnvironmentManager />
         <RequestContentTabs
+          params={activeRequest.params || {}}
+          auth={activeRequest.auth || { type: "none" }}
           headers={activeRequest.headers || {}}
           body={activeRequest.body || {}}
           requestId={requestId}
           updateRequest={updateRequest}
         />
       </div>
+      <ModifiedRequestModal
+        open={showModifiedModal}
+        onClose={() => setShowModifiedModal(false)}
+        onSaveAndRun={handleSaveAndRun}
+        onRunWithoutSaving={handleRunWithoutSaving}
+      />
     </div >
 
   );

@@ -4,8 +4,15 @@ import { getCookieValue, shouldAttachCsrf } from "./securityHeaders";
 
 console.log("API BASE:", import.meta.env.VITE_API_URL);
 
+const rawApiBase = (import.meta.env.VITE_API_URL || "").trim();
+const normalizedApiBase = rawApiBase
+  ? rawApiBase.replace(/\/+$/, "").endsWith("/api")
+    ? rawApiBase.replace(/\/+$/, "")
+    : `${rawApiBase.replace(/\/+$/, "")}/api`
+  : "/api";
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
+  baseURL: normalizedApiBase,
   withCredentials: true,
 });
 
@@ -14,11 +21,13 @@ let refreshPromise: Promise<void> | null = null;
 
 const ensureCsrfCookie = async () => {
   if (csrfInitialized) return;
-  try {
-    await api.get("/auth/csrf");
-  } finally {
+  const response = await api.get("/auth/csrf");
+  const csrfToken = response?.data?.csrfToken;
+  if (response.status === 200 && typeof csrfToken === "string" && csrfToken.length > 0) {
     csrfInitialized = true;
+    return;
   }
+  throw new Error("CSRF bootstrap failed");
 };
 
 api.interceptors.request.use(async (config) => {

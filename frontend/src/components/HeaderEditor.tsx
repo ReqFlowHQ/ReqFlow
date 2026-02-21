@@ -13,22 +13,50 @@ interface HeaderEditorProps {
   updateRequest: (id: string, updates: Partial<any>) => void;
 }
 
+const rowsAreEqual = (a: HeaderRow[], b: HeaderRow[]) =>
+  a.length === b.length &&
+  a.every(
+    (row, index) =>
+      row.id === b[index]?.id &&
+      row.key === b[index]?.key &&
+      row.value === b[index]?.value
+  );
+
+const buildRowsFromHeaders = (
+  source: Record<string, string>,
+  previousRows: HeaderRow[] = []
+): HeaderRow[] => {
+  const idByKey = new Map(previousRows.map((row) => [row.key, row.id]));
+  return Object.entries(source || {}).map(([key, value]) => ({
+    id: idByKey.get(key) ?? crypto.randomUUID(),
+    key,
+    value,
+  }));
+};
+
 export default function HeaderEditor({
   headers,
   requestId,
   updateRequest,
 }: HeaderEditorProps) {
   const [rows, setRows] = useState<HeaderRow[]>([]);
+  const isLocalSyncRef = React.useRef(false);
 
   useEffect(() => {
-    const initialRows = Object.entries(headers || {}).map(
-      ([key, value], i) => ({
-        id: `${key}-${i}`,
-        key,
-        value,
-      })
-    );
-    setRows(initialRows);
+    isLocalSyncRef.current = false;
+    setRows(buildRowsFromHeaders(headers || {}));
+  }, [requestId]);
+
+  useEffect(() => {
+    if (isLocalSyncRef.current) {
+      isLocalSyncRef.current = false;
+      return;
+    }
+
+    setRows((previousRows) => {
+      const nextRows = buildRowsFromHeaders(headers || {}, previousRows);
+      return rowsAreEqual(previousRows, nextRows) ? previousRows : nextRows;
+    });
   }, [headers]);
 
   const syncToRequest = (updatedRows: HeaderRow[]) => {
@@ -36,15 +64,18 @@ export default function HeaderEditor({
     updatedRows.forEach(({ key, value }) => {
       if (key.trim()) obj[key] = value;
     });
+    isLocalSyncRef.current = true;
     updateRequest(requestId, { headers: obj });
   };
 
   const updateRow = (id: string, field: "key" | "value", value: string) => {
-    const updated = rows.map((r) =>
-      r.id === id ? { ...r, [field]: value } : r
-    );
-    setRows(updated);
-    syncToRequest(updated);
+    setRows((previousRows) => {
+      const updated = previousRows.map((row) =>
+        row.id === id ? { ...row, [field]: value } : row
+      );
+      syncToRequest(updated);
+      return updated;
+    });
   };
 
   const addHeader = () => {
@@ -56,9 +87,11 @@ export default function HeaderEditor({
   };
 
   const removeHeader = (id: string) => {
-    const updated = rows.filter((r) => r.id !== id);
-    setRows(updated);
-    syncToRequest(updated);
+    setRows((previousRows) => {
+      const updated = previousRows.filter((row) => row.id !== id);
+      syncToRequest(updated);
+      return updated;
+    });
   };
 
   return (

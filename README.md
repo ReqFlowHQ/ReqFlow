@@ -16,11 +16,18 @@
   <img src="https://img.shields.io/badge/Swagger-API_Docs-85EA2D?logo=swagger&logoColor=white&style=for-the-badge" />
 </p>
 
+<<<<<<< HEAD
 ![Release](https://img.shields.io/github/v/release/ReqFlowHQ/ReqFlow)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen)
 ![Mobile](https://img.shields.io/badge/mobile-supported-purple)
 ![License](https://img.shields.io/github/license/ReqFlowHQ/ReqFlow)
 ![Stars](https://img.shields.io/github/stars/ReqFlowHQ/ReqFlow?style=social)
+=======
+- Frontend: React 18 + Vite + TypeScript
+- Backend: Express + TypeScript + repository abstraction (`mongo` or `sqlite`)
+- Auth: OAuth login (Google/GitHub), HTTP-only access/refresh cookies
+- Security: CSRF protection, origin validation, SSRF protections for outbound execution
+>>>>>>> 2700196 (Prepare v2.0.0 beta - history + env variables + UI + mobile fixes)
 
 ---
 
@@ -351,6 +358,7 @@ If you find something to improve, feel free to open an issue or submit a PR.
 
 ---
 
+<<<<<<< HEAD
 # License
 
 MIT License
@@ -358,3 +366,12 @@ MIT License
 ---
 
 © 2026 ReqFlow. Created and maintained by OpenGraph Labs.
+=======
+- `JWT_SECRET`
+- `JWT_REFRESH_SECRET` (falls back to `JWT_SECRET` if omitted)
+- `CORS_ORIGINS` (comma-separated trusted origins)
+- `DATA_REPOSITORY` (`mongo` by default, `sqlite` optional)
+- `SQLITE_DB_PATH` (used when `DATA_REPOSITORY=sqlite`)
+- `CONNECT_MONGO_FOR_AUTH` (keep Mongo auth/session models connected while SQLite backs request data)
+- OAuth provider credentials (`GOOGLE_*`, `GITHUB_*`)
+>>>>>>> 2700196 (Prepare v2.0.0 beta - history + env variables + UI + mobile fixes)

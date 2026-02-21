@@ -25,6 +25,8 @@ test("executeRequest blocks disallowed URL before outbound call", async () => {
   );
 
   assert.equal(result.status, 400);
-  assert.equal(result.statusText, "Blocked URL");
-  assert.match(result.data.error, /Blocked URL/);
+  assert.equal(result.statusText, "Bad Request");
+  assert.equal(result.data.error, "SSRF blocked error");
+  assert.equal(result.data.code, "SSRF_BLOCKED");
+  assert.match(result.data.message, /Blocked URL/);
 });

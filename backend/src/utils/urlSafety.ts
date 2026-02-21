@@ -5,6 +5,39 @@ const BLOCKED_HOSTNAMES = new Set([
   "localhost",
   "0.0.0.0",
 ]);
+const DNS_CACHE_TTL_MS = Number(process.env.URL_SAFETY_DNS_CACHE_TTL_MS || 10000);
+const DNS_CACHE_MAX_ENTRIES = Number(
+  process.env.URL_SAFETY_DNS_CACHE_MAX_ENTRIES || 1000
+);
+
+type DnsCacheEntry = {
+  expiresAt: number;
+  addresses: string[];
+};
+
+const dnsCache = new Map<string, DnsCacheEntry>();
+
+const readCachedAddresses = (host: string): string[] | null => {
+  const cached = dnsCache.get(host);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    dnsCache.delete(host);
+    return null;
+  }
+  return cached.addresses;
+};
+
+const writeCachedAddresses = (host: string, addresses: string[]) => {
+  dnsCache.set(host, {
+    expiresAt: Date.now() + DNS_CACHE_TTL_MS,
+    addresses,
+  });
+
+  if (dnsCache.size > DNS_CACHE_MAX_ENTRIES) {
+    const firstKey = dnsCache.keys().next().value as string | undefined;
+    if (firstKey) dnsCache.delete(firstKey);
+  }
+};
 
 const isPrivateIPv4 = (ip: string): boolean => {
   const parts = ip.split(".").map(Number);
@@ -83,8 +116,18 @@ export const validateSafeHttpUrl = async (
   }
 
   try {
-    const resolved = await dns.lookup(host, { all: true, verbatim: true });
-    if (resolved.some((entry) => isBlockedIp(entry.address))) {
+    const cachedAddresses = readCachedAddresses(host);
+    const addresses =
+      cachedAddresses ||
+      (await dns.lookup(host, { all: true, verbatim: true })).map(
+        (entry) => entry.address
+      );
+
+    if (!cachedAddresses) {
+      writeCachedAddresses(host, addresses);
+    }
+
+    if (addresses.some((address) => isBlockedIp(address))) {
       return { ok: false, reason: "Target resolves to a private or reserved IP" };
     }
   } catch {

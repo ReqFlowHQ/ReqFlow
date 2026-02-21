@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit",
     "test:unit": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test tests/**/*.test.mjs",
+    "test:e2e": "npx --yes -p @playwright/test@1.50.1 playwright test -c playwright.config.mjs",
     "test:coverage": "npm run test:unit"
   },
   "dependencies": {

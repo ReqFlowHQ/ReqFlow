@@ -6,6 +6,9 @@ import SafeLink from "../components/SafeLink";
 import ReqFlowLogo from "../components/ReqFlowLogo";
 
 export default function Landing() {
+  const googleSiteVerification =
+    (import.meta.env.VITE_GOOGLE_SITE_VERIFICATION || "").trim();
+
   return (
     <>
       <Helmet>
@@ -35,6 +38,12 @@ export default function Landing() {
           rel="canonical"
           href="https://reqflow.onlineappsandservices.online/"
         />
+        {googleSiteVerification ? (
+          <meta
+            name="google-site-verification"
+            content={googleSiteVerification}
+          />
+        ) : null}
 
         <meta
           name="keywords"
@@ -414,4 +423,3 @@ export default function Landing() {
     </>
   );
 }
-

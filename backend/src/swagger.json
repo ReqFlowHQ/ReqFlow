@@ -47,6 +47,14 @@
         }
       }
     },
+    "/api/auth/verify-email": {
+      "get": {
+        "summary": "Legacy email verification endpoint",
+        "responses": {
+          "410": { "description": "Deprecated. OAuth sign-in only." }
+        }
+      }
+    },
     "/api/auth/refresh": {
       "post": {
         "summary": "Rotate refresh session and issue fresh access/refresh cookies",

@@ -43,6 +43,8 @@ export default function Login() {
           name="description"
           content="Sign in to ReqFlow by OpenGraph Labs. Manage and test your APIs with a modern developer-first workflow."
         />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="canonical" href="https://reqflow.onlineappsandservices.online/login" />
       </Helmet>
 
       <div className="relative min-h-screen overflow-hidden bg-[#0b1220] px-4 py-8 sm:px-6 md:flex md:items-center md:justify-center md:py-12">

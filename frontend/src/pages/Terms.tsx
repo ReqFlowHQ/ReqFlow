@@ -9,6 +9,9 @@ export default function Terms() {
           name="description"
           content="Read the Terms of Service for ReqFlow, a modern API workflow tool built by OpenGraph Labs."
         />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://reqflow.onlineappsandservices.online/terms" />
+        <meta property="og:url" content="https://reqflow.onlineappsandservices.online/terms" />
       </Helmet>
 	<div className="min-h-screen bg-gray-900">
         <div className="max-w-4xl mx-auto px-6 py-16 text-gray-300 leading-relaxed">

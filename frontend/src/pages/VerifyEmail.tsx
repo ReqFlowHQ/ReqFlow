@@ -1,60 +1,54 @@
-// FILE: frontend/src/pages/VerifyEmail.tsx
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import { useParams, useSearchParams } from "react-router-dom";
+import SafeLink from "../components/SafeLink";
 
 export default function VerifyEmail() {
+  const { token: routeToken } = useParams<{ token?: string }>();
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-
-  useEffect(() => {
-    const token = searchParams.get("token");
-    if (!token) {
-      setStatus("error");
-      return;
-    }
-
-    // Simulate verification API call
-    fetch(`/api/auth/verify-email?token=${token}`, {
-      credentials: "include",
-    })
-
-      .then((res) => {
-        if (res.ok) setStatus("success");
-        else throw new Error("Invalid token");
-      })
-      .catch(() => setStatus("error"));
-  }, [searchParams]);
+  const token = routeToken || searchParams.get("token");
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md text-center">
-        {status === "loading" && (
-          <>
-            <h1 className="text-xl font-semibold text-brand-teal mb-2">
-              Verifying your email...
-            </h1>
-            <p className="text-gray-500 text-sm">Please wait a moment.</p>
-          </>
-        )}
-        {status === "success" && (
-          <>
-            <h1 className="text-xl font-semibold text-green-600 mb-2">
-              Email Verified Successfully 🎉
-            </h1>
-            <p className="text-gray-500 text-sm">You can now log in to your account.</p>
-          </>
-        )}
-        {status === "error" && (
-          <>
-            <h1 className="text-xl font-semibold text-red-500 mb-2">
-              Verification Failed
-            </h1>
-            <p className="text-gray-500 text-sm">
-              Invalid or expired link. Please request a new one.
+    <>
+      <Helmet>
+        <title>Verify Email · ReqFlow</title>
+        <meta
+          name="description"
+          content="ReqFlow uses OAuth login. Email verification links are deprecated."
+        />
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+
+      <div className="flex h-screen items-center justify-center bg-gray-50 px-6 text-center dark:bg-gray-900">
+        <div className="w-full max-w-xl rounded-xl bg-white p-8 shadow-md dark:bg-gray-800">
+          <h1 className="mb-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+            Verification link received
+          </h1>
+
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            ReqFlow currently uses OAuth sign-in (Google/GitHub), so manual email
+            verification is not required.
+          </p>
+
+          {token ? (
+            <p className="mt-3 break-all text-xs text-slate-500 dark:text-slate-400">
+              Token: {token}
             </p>
-          </>
-        )}
+          ) : (
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              No verification token was provided.
+            </p>
+          )}
+
+          <div className="mt-6">
+            <SafeLink
+              to="/login"
+              className="inline-flex rounded-md bg-cyan-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-cyan-700"
+            >
+              Go to Login
+            </SafeLink>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

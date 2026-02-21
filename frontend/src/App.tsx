@@ -56,6 +56,10 @@ export default function App() {
               path="/verify/:token"
               element={MAINTENANCE ? <Maintenance /> : <VerifyEmail />}
             />
+            <Route
+              path="/verify"
+              element={MAINTENANCE ? <Maintenance /> : <VerifyEmail />}
+            />
 
             <Route
               path="/dashboard"
@@ -71,4 +75,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
