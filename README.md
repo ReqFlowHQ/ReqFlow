@@ -16,22 +16,9 @@
   <img src="https://img.shields.io/badge/Swagger-API_Docs-85EA2D?logo=swagger&logoColor=white&style=for-the-badge" />
 </p>
 
-<<<<<<< HEAD
-![Release](https://img.shields.io/github/v/release/ReqFlowHQ/ReqFlow)
-![Status](https://img.shields.io/badge/status-stable-brightgreen)
-![Mobile](https://img.shields.io/badge/mobile-supported-purple)
-![License](https://img.shields.io/github/license/ReqFlowHQ/ReqFlow)
-![Stars](https://img.shields.io/github/stars/ReqFlowHQ/ReqFlow?style=social)
-=======
-- Frontend: React 18 + Vite + TypeScript
-- Backend: Express + TypeScript + repository abstraction (`mongo` or `sqlite`)
-- Auth: OAuth login (Google/GitHub), HTTP-only access/refresh cookies
-- Security: CSRF protection, origin validation, SSRF protections for outbound execution
->>>>>>> 2700196 (Prepare v2.0.0 beta - history + env variables + UI + mobile fixes)
-
 ---
 
-Released as v1.0.2 · Actively maintained
+Released as v2.0.0 (Beta) · Actively maintained
 
 # ReqFlow — API Testing & Request Workflow Platform
 
