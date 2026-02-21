@@ -345,7 +345,6 @@ If you find something to improve, feel free to open an issue or submit a PR.
 
 ---
 
-<<<<<<< HEAD
 # License
 
 MIT License
@@ -353,12 +352,3 @@ MIT License
 ---
 
 © 2026 ReqFlow. Created and maintained by OpenGraph Labs.
-=======
-- `JWT_SECRET`
-- `JWT_REFRESH_SECRET` (falls back to `JWT_SECRET` if omitted)
-- `CORS_ORIGINS` (comma-separated trusted origins)
-- `DATA_REPOSITORY` (`mongo` by default, `sqlite` optional)
-- `SQLITE_DB_PATH` (used when `DATA_REPOSITORY=sqlite`)
-- `CONNECT_MONGO_FOR_AUTH` (keep Mongo auth/session models connected while SQLite backs request data)
-- OAuth provider credentials (`GOOGLE_*`, `GITHUB_*`)
->>>>>>> 2700196 (Prepare v2.0.0 beta - history + env variables + UI + mobile fixes)
