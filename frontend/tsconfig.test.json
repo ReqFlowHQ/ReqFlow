@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "./.test-dist",
+    "rootDir": "./src",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022"
+  },
+  "include": [
+    "src/api/securityHeaders.ts",
+    "src/utils/normalizeRequestUrl.ts",
+    "src/utils/buildRequestUrlWithParams.ts",
+    "src/utils/requestAuth.ts",
+    "src/utils/templateInterpolation.ts",
+    "src/utils/sendRequestFlow.ts",
+    "src/utils/responseViewer.ts",
+    "src/utils/tabPersistence.ts",
+    "src/utils/workspaceSession.ts"
+  ]
+}

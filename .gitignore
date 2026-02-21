@@ -28,10 +28,8 @@ Thumbs.db
 *.pid
 
 # cloudflared
-*.json
 .cloudflared/
 
 # misc
 coverage/
-playwright-report/
-test-results/
+
