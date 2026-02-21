@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import { useRequests, type RunHistoryItem } from "../hooks/useRequests";
-import { html as beautifyHTML } from "js-beautify";
 import { shallow } from "zustand/shallow";
 import api from "../api/axios";
 import {
@@ -94,7 +93,6 @@ export default function JsonViewer() {
   const jsonStringCacheRef = React.useRef<
     WeakMap<object, { raw?: string; pretty?: string }>
   >(new WeakMap());
-  const htmlPrettyCacheRef = React.useRef<Map<string, string>>(new Map());
 
   const [viewMode, setViewMode] = useState<ViewMode>("pretty");
   const responseContentType = getHeaderValue(currentResponse?.headers, "content-type");
@@ -170,27 +168,6 @@ export default function JsonViewer() {
     }
 
     if (parsedBase.type === "html") {
-      if (viewMode === "pretty") {
-        const cachedPretty = htmlPrettyCacheRef.current.get(parsedBase.raw);
-        if (cachedPretty) {
-          return cachedPretty;
-        }
-        const pretty = beautifyHTML(parsedBase.raw, {
-          indent_size: 2,
-          preserve_newlines: true,
-          wrap_line_length: 80,
-        });
-        htmlPrettyCacheRef.current.set(parsedBase.raw, pretty);
-        if (htmlPrettyCacheRef.current.size > 20) {
-          const firstKey = htmlPrettyCacheRef.current.keys().next().value as
-            | string
-            | undefined;
-          if (firstKey) {
-            htmlPrettyCacheRef.current.delete(firstKey);
-          }
-        }
-        return pretty;
-      }
       return parsedBase.raw;
     }
 

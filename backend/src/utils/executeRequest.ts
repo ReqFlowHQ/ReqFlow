@@ -195,13 +195,52 @@ const isTextContentType = (contentType: string): boolean => {
   );
 };
 
+const extractCharset = (contentType: string): string => {
+  if (!contentType) return "";
+  const match = /charset\s*=\s*("?)([^;\s"]+)\1/i.exec(contentType);
+  return match ? match[2].trim().toLowerCase() : "";
+};
+
+const charsetToEncoding = (charset: string): BufferEncoding | null => {
+  const normalized = charset.replace(/_/g, "-");
+  switch (normalized) {
+    case "utf-8":
+    case "utf8":
+      return "utf8";
+    case "utf-16":
+    case "utf-16le":
+    case "utf16":
+    case "utf16le":
+      return "utf16le";
+    case "latin1":
+    case "iso-8859-1":
+    case "iso8859-1":
+      return "latin1";
+    case "us-ascii":
+    case "ascii":
+      return "ascii";
+    default:
+      return null;
+  }
+};
+
+const decodeBuffer = (buffer: Buffer, contentType: string): string => {
+  const charset = extractCharset(contentType);
+  const encoding = charsetToEncoding(charset) || "utf8";
+  try {
+    return buffer.toString(encoding);
+  } catch {
+    return buffer.toString("utf8");
+  }
+};
+
 const parseResponseBody = (buffer: Buffer, contentType: string): unknown => {
   if (buffer.byteLength === 0) {
     return "";
   }
 
   if (isJsonContentType(contentType)) {
-    const rawText = buffer.toString("utf8");
+    const rawText = decodeBuffer(buffer, contentType);
     try {
       return JSON.parse(rawText);
     } catch {
@@ -210,7 +249,7 @@ const parseResponseBody = (buffer: Buffer, contentType: string): unknown => {
   }
 
   if (isTextContentType(contentType) || !contentType) {
-    return buffer.toString("utf8");
+    return decodeBuffer(buffer, contentType);
   }
 
   return buffer;

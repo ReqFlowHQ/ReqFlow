@@ -20,6 +20,16 @@ import {
   type NetworkTimingBreakdown,
 } from "../utils/performanceMetrics";
 
+const DEFAULT_UPSTREAM_REQUEST_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  Accept: "*/*",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+
+type UpstreamHeaderValue = string | number | boolean | null | undefined;
+type UpstreamHeaders = Record<string, UpstreamHeaderValue>;
+
 const toStoredHeaderValue = (value: unknown): string => {
   if (Array.isArray(value)) {
     return value.map((entry) => String(entry)).join(", ");
@@ -41,6 +51,60 @@ const normalizeHeadersForStorage = (
     normalized[key] = toStoredHeaderValue(value);
   }
   return normalized;
+};
+
+const withDefaultUpstreamHeaders = (
+  headers: Record<string, unknown>
+): UpstreamHeaders => {
+  const normalized: UpstreamHeaders = {
+    ...DEFAULT_UPSTREAM_REQUEST_HEADERS,
+  };
+
+  for (const [key, value] of Object.entries(headers || {})) {
+    if (
+      value === undefined ||
+      value === null ||
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      normalized[key] = value;
+      continue;
+    }
+    normalized[key] = toStoredHeaderValue(value);
+  }
+
+  return normalized;
+};
+
+const getHeaderValue = (
+  headers: Record<string, unknown> | undefined,
+  key: string
+): string => {
+  if (!headers) return "";
+  const target = key.toLowerCase();
+  for (const [headerKey, headerValue] of Object.entries(headers)) {
+    if (headerKey.toLowerCase() === target) {
+      return toStoredHeaderValue(headerValue);
+    }
+  }
+  return "";
+};
+
+const formatResponseDataForClient = (
+  data: unknown,
+  headers: Record<string, unknown>
+): unknown => {
+  if (typeof data !== "string") {
+    return data;
+  }
+
+  const contentType = getHeaderValue(headers, "content-type").toLowerCase();
+  if (contentType.includes("text/html")) {
+    return { html: data };
+  }
+
+  return { text: data };
 };
 
 interface PersistExecutionArgs {
@@ -199,10 +263,13 @@ export const executeAndSave = async (req: Request, res: Response) => {
     }
 
     const methodUpper = String(dbRequest.method || "GET").toUpperCase();
+    const upstreamRequestHeaders = withDefaultUpstreamHeaders(
+      authApplied.headers as Record<string, unknown>
+    );
     const response = await executeRequest(
       dbRequest.method as any,
       effectiveUrl,
-      authApplied.headers,
+      upstreamRequestHeaders,
       methodUpper !== "GET" ? resolvedBody : undefined,
       {
         skipSafetyCheck: true,
@@ -212,26 +279,15 @@ export const executeAndSave = async (req: Request, res: Response) => {
       }
     );
 
-    const contentType =
-      ((response.headers as Record<string, unknown>)["content-type"] as string) || "";
-    let responseData = response.data;
-
-    if (typeof responseData === "string" && contentType.includes("text/html")) {
-      responseData = { html: responseData };
-    } else if (
-      typeof responseData === "string" &&
-      contentType.includes("text/plain")
-    ) {
-      responseData = { text: responseData };
-    }
+    const responseHeaders = response.headers as Record<string, unknown>;
+    const responseData = formatResponseDataForClient(response.data, responseHeaders);
 
     const storedResponse: StoredResponse = {
       status: response.status,
       statusText: response.statusText,
-      headers: normalizeHeadersForStorage(
-        response.headers as Record<string, unknown>
-      ),
-      data: responseData,
+      headers: normalizeHeadersForStorage(responseHeaders),
+      // Persist the upstream payload exactly as received from executeRequest.
+      data: response.data,
     };
     const latencyMs = toCanonicalLatencyMs(networkTiming);
 
@@ -240,7 +296,7 @@ export const executeAndSave = async (req: Request, res: Response) => {
       data: responseData,
       status: response.status,
       statusText: response.statusText,
-      headers: response.headers,
+      headers: responseHeaders,
       latencyMs,
     });
 
@@ -386,17 +442,14 @@ export const executeTemp = async (req: Request, res: Response) => {
     }
 
     const upperMethod = method.toUpperCase();
+    const upstreamRequestHeaders = withDefaultUpstreamHeaders(
+      authApplied.headers as Record<string, unknown>
+    );
 
     const response = await executeRequest(
       upperMethod as any,
       effectiveUrl,
-      {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        Accept: "*/*",
-        "Accept-Language": "en-US,en;q=0.9",
-        ...authApplied.headers,
-      },
+      upstreamRequestHeaders,
       upperMethod !== "GET" ? resolvedBody : undefined,
       {
         skipSafetyCheck: true,
@@ -406,15 +459,8 @@ export const executeTemp = async (req: Request, res: Response) => {
       }
     );
 
-    const contentType =
-      ((response.headers as Record<string, unknown>)["content-type"] as string) || "";
-    let responseData = response.data;
-
-    if (typeof responseData === "string" && contentType.includes("text/html")) {
-      responseData = { html: responseData };
-    } else if (typeof responseData === "string") {
-      responseData = { text: responseData };
-    }
+    const responseHeaders = response.headers as Record<string, unknown>;
+    const responseData = formatResponseDataForClient(response.data, responseHeaders);
     if ((req as any).guestMeta) {
       res.setHeader("x-guest-limit", (req as any).guestMeta.limit);
       res.setHeader("x-guest-remaining", (req as any).guestMeta.remaining);
@@ -436,7 +482,7 @@ export const executeTemp = async (req: Request, res: Response) => {
       data: responseData,
       status: response.status,
       statusText: response.statusText,
-      headers: response.headers,
+      headers: responseHeaders,
       latencyMs: toCanonicalLatencyMs(networkTiming),
     });
   } catch (err: any) {

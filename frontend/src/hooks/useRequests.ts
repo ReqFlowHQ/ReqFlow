@@ -196,6 +196,40 @@ const resolveDisplayedLatencyMs = (
   return Math.max(0, Math.round(performance.now() - startedAtMs));
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const normalizeExecutionResponse = (params: {
+  payload: unknown;
+  transportStatus: number;
+  transportStatusText: string;
+  transportHeaders?: Record<string, unknown>;
+  startedAtMs: number;
+}) => {
+  const payloadRecord = isRecord(params.payload) ? params.payload : null;
+  const payloadHeaders =
+    payloadRecord && isRecord(payloadRecord.headers)
+      ? (payloadRecord.headers as Record<string, unknown>)
+      : undefined;
+
+  return {
+    data:
+      payloadRecord && Object.prototype.hasOwnProperty.call(payloadRecord, "data")
+        ? payloadRecord.data
+        : params.payload,
+    status:
+      payloadRecord && typeof payloadRecord.status === "number"
+        ? payloadRecord.status
+        : params.transportStatus,
+    statusText:
+      payloadRecord && typeof payloadRecord.statusText === "string"
+        ? payloadRecord.statusText
+        : params.transportStatusText,
+    headers: payloadHeaders || params.transportHeaders || {},
+    time: resolveDisplayedLatencyMs(params.payload, params.startedAtMs),
+  };
+};
+
 /* ---------------- Store ---------------- */
 export const useRequests = create<ReqFlowState>()(
 
@@ -787,7 +821,6 @@ if (guestRemaining !== null && guestRemaining <= 0) {
 const {
   activeRequest,
   updateRequest,
-  setResponse,
   setLoading,
   setGuestRemaining,
   fetchExecutionHistory,
@@ -841,13 +874,13 @@ if (remaining !== undefined) {
   setGuestRemaining(Number(remaining));
 }
 
-const enhancedResponse = {
-  data: res.data?.data ?? res.data,
-  status: res.status,
-  statusText: res.statusText,
-  headers: res.data?.headers ?? {},
-  time: resolveDisplayedLatencyMs(res.data, start),
-};
+const enhancedResponse = normalizeExecutionResponse({
+  payload: res.data,
+  transportStatus: res.status,
+  transportStatusText: res.statusText,
+  transportHeaders: res.headers as Record<string, unknown>,
+  startedAtMs: start,
+});
 
 	
             updateRequest(activeRequest._id, {
@@ -880,18 +913,17 @@ if (res.status >= 400) {
 
 
             const enhancedResponse = {
-              ...res.data,
-              time: resolveDisplayedLatencyMs(res.data, start),
+              ...normalizeExecutionResponse({
+                payload: res.data,
+                transportStatus: res.status,
+                transportStatusText: res.statusText,
+                transportHeaders: res.headers as Record<string, unknown>,
+                startedAtMs: start,
+              }),
             };
 
             updateRequest(activeRequest._id, { response: enhancedResponse });
-            set({
-              activeRequest: {
-                ...activeRequest,
-                response: enhancedResponse,
-              },
-              response: enhancedResponse,
-            });
+            set({ response: enhancedResponse });
 
             setTimeout(() => {
               void fetchExecutionHistory(activeRequest._id, { reset: true });
@@ -905,13 +937,13 @@ if (res.status >= 400) {
       setGuestRemaining(Number(remaining));
     }
 
-    const enhancedResponse = {
-      data: err.response.data,
-      status: err.response.status,
-      statusText: err.response.statusText,
-      headers: err.response.headers ?? {},
-      time: resolveDisplayedLatencyMs(err.response.data, start),
-    };
+    const enhancedResponse = normalizeExecutionResponse({
+      payload: err.response.data,
+      transportStatus: Number(err.response.status) || 500,
+      transportStatusText: String(err.response.statusText || "Request failed"),
+      transportHeaders: (err.response.headers || {}) as Record<string, unknown>,
+      startedAtMs: start,
+    });
 
     updateRequest(activeRequest._id, { response: enhancedResponse });
     set({ response: enhancedResponse });
@@ -983,13 +1015,13 @@ if (res.status >= 400) {
             setGuestRemaining(Number(remaining));
           }
 
-          const enhancedResponse = {
-            data: res.data?.data ?? res.data,
-            status: res.status,
-            statusText: res.statusText,
-            headers: res.data?.headers ?? {},
-            time: resolveDisplayedLatencyMs(res.data, start),
-          };
+          const enhancedResponse = normalizeExecutionResponse({
+            payload: res.data,
+            transportStatus: res.status,
+            transportStatusText: res.statusText,
+            transportHeaders: res.headers as Record<string, unknown>,
+            startedAtMs: start,
+          });
 
           updateRequest(activeRequest._id, {
             response: enhancedResponse,
@@ -1002,13 +1034,13 @@ if (res.status >= 400) {
               setGuestRemaining(Number(remaining));
             }
 
-            const enhancedResponse = {
-              data: err.response.data,
-              status: err.response.status,
-              statusText: err.response.statusText,
-              headers: err.response.headers ?? {},
-              time: resolveDisplayedLatencyMs(err.response.data, start),
-            };
+            const enhancedResponse = normalizeExecutionResponse({
+              payload: err.response.data,
+              transportStatus: Number(err.response.status) || 500,
+              transportStatusText: String(err.response.statusText || "Request failed"),
+              transportHeaders: (err.response.headers || {}) as Record<string, unknown>,
+              startedAtMs: start,
+            });
 
             updateRequest(activeRequest._id, { response: enhancedResponse });
             set({ response: enhancedResponse });
